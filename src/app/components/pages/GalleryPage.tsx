@@ -3,19 +3,38 @@ import { supabase, isSupabaseConfigured, SavedArmy } from "../../lib/supabase";
 import { factions, ArmyUnit } from "../../data/gameData";
 import { ArmyView } from "../pillages/ArmyView";
 import { useTranslation } from "../pillages/TranslationContext";
+import { useAuth } from "../../lib/AuthContext";
 import { Card, CardHeader, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp, Coins, User, Calendar } from "lucide-react";
+import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 const ALL = "__all__";
 
 export function GalleryPage() {
   const { tData } = useTranslation();
+  const { isAdmin } = useAuth();
   const [armies, setArmies] = React.useState<SavedArmy[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [error, setError] = React.useState<string | null>(null);
   const [factionFilter, setFactionFilter] = React.useState<string>(ALL);
+
+  const adminDelete = async (army: SavedArmy) => {
+    if (
+      !confirm(
+        `Modération : supprimer définitivement la liste "${army.army_name || "Sans nom"}" de ${army.author_name} ?`
+      )
+    )
+      return;
+    const { error } = await supabase.from("armies").delete().eq("id", army.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setArmies((prev) => prev.filter((a) => a.id !== army.id));
+    toast.success("Liste supprimée (modération)");
+  };
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -56,6 +75,16 @@ export function GalleryPage() {
       <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">
         Galerie des armées
       </h2>
+
+      {isAdmin && (
+        <div className="bg-red-950/60 border border-red-700/50 px-4 py-3 flex items-center gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-sm text-red-100">
+            <span className="font-bold uppercase tracking-widest">Mode modérateur actif.</span>{" "}
+            Vous pouvez supprimer n'importe quelle liste publiée.
+          </p>
+        </div>
+      )}
 
       {/* Faction filter */}
       {armies.length > 0 && (
@@ -145,9 +174,29 @@ export function GalleryPage() {
                           po
                         </span>
                       </div>
-                      <Button variant="ghost" size="icon" className="text-stone-300 hover:text-[#cc6512] -mr-2" aria-label={isOpen ? "Replier" : "Déplier"}>
-                        {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                      </Button>
+                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => adminDelete(a)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-950/40 h-8 w-8"
+                            title="Supprimer (modération)"
+                            aria-label="Supprimer en tant que modérateur"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggle(a.id)}
+                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
+                          aria-label={isOpen ? "Replier" : "Déplier"}
+                        >
+                          {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>

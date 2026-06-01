@@ -78,7 +78,54 @@ create policy "Users can delete their own armies"
   using (auth.uid() = user_id);
 ```
 
-## 4. (Optionnel) Désactiver la confirmation email
+## 4. Mode modérateur (admin)
+
+Pour pouvoir supprimer n'importe quelle liste publique (modération), il faut
+deux choses : ajouter une policy RLS qui autorise les admins, et marquer ton
+compte comme admin dans Supabase.
+
+### a. Ajouter la policy admin
+
+Dans **SQL Editor → New query**, exécuter :
+
+```sql
+create policy "Admins can delete any army"
+  on public.armies for delete
+  using (
+    coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'admin'
+  );
+```
+
+### b. Te promouvoir admin
+
+Toujours dans SQL Editor (remplace l'email par le tien) :
+
+```sql
+update auth.users
+set raw_app_meta_data =
+  coalesce(raw_app_meta_data, '{}'::jsonb) || '{"role": "admin"}'::jsonb
+where email = 'ton-email@example.com';
+```
+
+`raw_app_meta_data` est contrôlé uniquement par Supabase — un utilisateur ne
+peut pas se l'octroyer lui-même depuis le frontend.
+
+### c. Te déconnecter / reconnecter
+
+Le JWT déjà en cache dans ton navigateur ne contient pas encore ce rôle. Va sur
+l'app, clique **Déconnexion** puis reconnecte-toi : un nouveau JWT est émis
+avec le rôle admin, et tu verras un bandeau rouge "Mode modérateur actif" dans
+la galerie + une icône poubelle rouge sur chaque liste publiée.
+
+### Retirer un admin
+
+```sql
+update auth.users
+set raw_app_meta_data = raw_app_meta_data - 'role'
+where email = 'ancien-admin@example.com';
+```
+
+## 5. (Optionnel) Désactiver la confirmation email
 
 Pour les tests locaux, dans **Authentication → Providers → Email**, désactiver
 "Confirm email" pour que les inscriptions soient immédiatement valides.
