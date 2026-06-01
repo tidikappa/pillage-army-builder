@@ -10,7 +10,7 @@ import { TranslationProvider, useTranslation } from "./components/pillages/Trans
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
-import { Globe, LogIn, LogOut, BookOpen, User, Menu, X } from "lucide-react";
+import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords } from "lucide-react";
 
 function LanguageSelector() {
   const { language, setLanguage } = useTranslation();
@@ -47,7 +47,9 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
   return (
     <>
       <NavLink to="/" className={linkClass} end onClick={onItemClick}>
-        Builder
+        <span className="inline-flex items-center gap-1">
+          <Swords className="w-3.5 h-3.5" /> Builder
+        </span>
       </NavLink>
       <NavLink to="/gallery" className={linkClass} onClick={onItemClick}>
         <span className="inline-flex items-center gap-1">

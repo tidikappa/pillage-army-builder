@@ -454,8 +454,11 @@ export function ArmyBuilder() {
              <div className="w-52 h-52 flex items-center justify-center relative z-10">
                 <img src={logoImage} alt="Pillage Logo" className="w-full h-full object-contain" />
              </div>
+             <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-block bg-[#cc6512]/90 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-[#cc6512]/30 shadow-[0_0_10px_rgba(204,101,18,0.5)] whitespace-nowrap">
+               Work in progress
+             </span>
           </div>
-          <div>
+          <div className="pt-4">
             <h2 className="text-5xl font-bold text-[#232221] font-['UnifrakturCook'] mb-2 drop-shadow-sm">
                 {t('appTitle')}
             </h2>

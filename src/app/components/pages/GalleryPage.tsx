@@ -3,9 +3,11 @@ import { supabase, isSupabaseConfigured, SavedArmy } from "../../lib/supabase";
 import { factions, ArmyUnit } from "../../data/gameData";
 import { ArmyView } from "../pillages/ArmyView";
 import { useTranslation } from "../pillages/TranslationContext";
-import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
+import { Card, CardHeader, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Coins, User, Calendar } from "lucide-react";
+
+const ALL = "__all__";
 
 export function GalleryPage() {
   const { tData } = useTranslation();
@@ -13,6 +15,7 @@ export function GalleryPage() {
   const [loading, setLoading] = React.useState(true);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [error, setError] = React.useState<string | null>(null);
+  const [factionFilter, setFactionFilter] = React.useState<string>(ALL);
 
   React.useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -41,42 +44,115 @@ export function GalleryPage() {
     });
   };
 
+  const availableFactions = React.useMemo(() => {
+    const ids = new Set(armies.map((a) => a.faction_id));
+    return factions.filter((f) => ids.has(f.id));
+  }, [armies]);
+
+  const filtered = factionFilter === ALL ? armies : armies.filter((a) => a.faction_id === factionFilter);
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">
         Galerie des armées
       </h2>
 
-      {loading && <p className="text-stone-300">Chargement...</p>}
+      {/* Faction filter */}
+      {armies.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-200 mr-1">
+            Faction :
+          </span>
+          <button
+            onClick={() => setFactionFilter(ALL)}
+            className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-all ${
+              factionFilter === ALL
+                ? "bg-[#cc6512] border-[#cc6512] text-white shadow-[0_0_10px_rgba(204,101,18,0.4)]"
+                : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
+            }`}
+          >
+            Toutes ({armies.length})
+          </button>
+          {availableFactions.map((f) => {
+            const count = armies.filter((a) => a.faction_id === f.id).length;
+            const active = factionFilter === f.id;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFactionFilter(f.id)}
+                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-all ${
+                  active
+                    ? "bg-[#cc6512] border-[#cc6512] text-white shadow-[0_0_10px_rgba(204,101,18,0.4)]"
+                    : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
+                }`}
+              >
+                {tData("factions", f.id, f.name)} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {loading && <p className="text-stone-200">Chargement...</p>}
       {error && <p className="text-red-400">{error}</p>}
       {!loading && !error && armies.length === 0 && (
-        <p className="text-stone-400 italic">Aucune liste publiée pour l'instant.</p>
+        <p className="text-stone-200 italic">Aucune liste publiée pour l'instant.</p>
+      )}
+      {!loading && !error && armies.length > 0 && filtered.length === 0 && (
+        <p className="text-stone-200 italic">Aucune armée pour cette faction.</p>
       )}
 
       <ul className="space-y-4">
-        {armies.map((a) => {
+        {filtered.map((a) => {
           const faction = factions.find((f) => f.id === a.faction_id);
           const isOpen = expanded.has(a.id);
           return (
             <li key={a.id}>
-              <Card className="bg-black/50 border-white/10 rounded-none text-stone-200">
-                <CardHeader className="cursor-pointer" onClick={() => toggle(a.id)}>
-                  <CardTitle className="flex justify-between items-center font-serif tracking-wide">
-                    <div>
-                      <div className="text-xl">{a.army_name || "Sans nom"}</div>
-                      <div className="text-xs text-stone-400 uppercase tracking-widest mt-1">
-                        {faction ? tData("factions", faction.id, faction.name) : a.faction_id} ·{" "}
-                        {a.author_name} · {a.budget} po ·{" "}
-                        {new Date(a.created_at).toLocaleDateString()}
+              <Card className="bg-black/70 border-white/15 rounded-none text-stone-100 shadow-xl hover:border-[#cc6512]/40 transition-colors">
+                <CardHeader
+                  className="cursor-pointer p-5"
+                  onClick={() => toggle(a.id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isOpen}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-['UnifrakturCook'] text-3xl text-stone-100 leading-tight drop-shadow-sm">
+                        {a.army_name || "Sans nom"}
+                      </h3>
+                      <div className="text-sm font-bold uppercase tracking-widest text-[#cc6512] mt-1">
+                        {faction ? tData("factions", faction.id, faction.name) : a.faction_id}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-stone-300">
+                        <span className="inline-flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-stone-400" />
+                          <span className="font-medium">{a.author_name}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                          {new Date(a.created_at).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-stone-400">
-                      {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                    </Button>
-                  </CardTitle>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5">
+                        <Coins className="w-4 h-4 text-[#cc6512]" />
+                        <span className="text-lg font-['UnifrakturCook'] font-bold text-[#cc6512] leading-none">
+                          {a.budget}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 ml-0.5">
+                          po
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="text-stone-300 hover:text-[#cc6512] -mr-2" aria-label={isOpen ? "Replier" : "Déplier"}>
+                        {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 {isOpen && (
-                  <CardContent>
+                  <CardContent className="border-t border-white/10 pt-4">
                     <ArmyView
                       factionId={a.faction_id}
                       budget={a.budget}

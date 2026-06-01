@@ -35,44 +35,52 @@ export function LoginPage() {
 
   return (
     <div className="max-w-md mx-auto pt-16">
-      <Card className="bg-black/50 border-white/10 text-stone-200 rounded-none">
-        <CardHeader>
-          <CardTitle className="font-serif uppercase tracking-widest text-xl">Connexion</CardTitle>
+      <Card className="bg-black/70 border-white/15 text-stone-100 rounded-none shadow-2xl">
+        <CardHeader className="border-b border-white/10">
+          <CardTitle className="font-serif uppercase tracking-widest text-2xl text-[#cc6512] drop-shadow-[0_0_10px_rgba(204,101,18,0.4)]">
+            Connexion
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs uppercase tracking-widest text-stone-400">Email</label>
+        <CardContent className="pt-6">
+          <form onSubmit={onSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="login-email" className="block text-sm font-bold uppercase tracking-widest text-stone-200">
+                Email
+              </label>
               <Input
+                id="login-email"
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="rounded-none bg-black/40 border-white/10 mt-1"
+                className="rounded-none bg-black/60 border-white/20 text-stone-100 h-11 px-4 focus:border-[#cc6512] focus:ring-[#cc6512]/30"
               />
             </div>
-            <div>
-              <label className="text-xs uppercase tracking-widest text-stone-400">Mot de passe</label>
+            <div className="space-y-2">
+              <label htmlFor="login-password" className="block text-sm font-bold uppercase tracking-widest text-stone-200">
+                Mot de passe
+              </label>
               <Input
+                id="login-password"
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="rounded-none bg-black/40 border-white/10 mt-1"
+                className="rounded-none bg-black/60 border-white/20 text-stone-100 h-11 px-4 focus:border-[#cc6512] focus:ring-[#cc6512]/30"
               />
             </div>
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full bg-[#cc6512] hover:bg-[#b0560f] text-white rounded-none font-bold tracking-wider"
+              className="w-full h-11 bg-[#cc6512] hover:bg-[#b0560f] text-white rounded-none font-bold tracking-widest uppercase text-sm"
             >
               {submitting ? "..." : "Se connecter"}
             </Button>
           </form>
-          <p className="text-sm text-stone-400 mt-6 text-center">
+          <p className="text-base text-stone-200 mt-8 text-center">
             Pas de compte ?{" "}
-            <Link to="/signup" className="text-[#cc6512] hover:underline">
-              Inscription
+            <Link to="/signup" className="text-[#cc6512] font-bold underline-offset-4 hover:underline">
+              Créer un compte
             </Link>
           </p>
         </CardContent>
