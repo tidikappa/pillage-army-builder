@@ -23,7 +23,7 @@ const ALL = "__all__";
 
 export function MyListsPage() {
   const { user, loading } = useAuth();
-  const { tData } = useTranslation();
+  const { t, tData } = useTranslation();
   const navigate = useNavigate();
   const [armies, setArmies] = React.useState<SavedArmy[]>([]);
   const [fetching, setFetching] = React.useState(true);
@@ -108,13 +108,13 @@ export function MyListsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">Mes listes</h2>
+      <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">{t("myListsTitle")}</h2>
 
       {/* Faction filter */}
       {armies.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-widest text-stone-200 mr-1">
-            Faction :
+            {t("factionFilterLabel")}
           </span>
           <button
             onClick={() => setFactionFilter(ALL)}
@@ -124,7 +124,7 @@ export function MyListsPage() {
                 : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
             }`}
           >
-            Toutes ({armies.length})
+            {t("allFactionsLabel")} ({armies.length})
           </button>
           {availableFactions.map((f) => {
             const count = armies.filter((a) => a.faction_id === f.id).length;
@@ -158,7 +158,7 @@ export function MyListsPage() {
         </p>
       )}
       {!fetching && !error && armies.length > 0 && filtered.length === 0 && (
-        <p className="text-stone-200 italic">Aucune armée pour cette faction.</p>
+        <p className="text-stone-200 italic">{t("noArmiesForFaction")}</p>
       )}
 
       <ul className="space-y-4">

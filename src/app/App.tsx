@@ -31,6 +31,7 @@ function LanguageSelector() {
 
 function NavItems({ onItemClick }: { onItemClick?: () => void }) {
   const { user, signOut, loading } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -48,18 +49,18 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
     <>
       <NavLink to="/" className={linkClass} end onClick={onItemClick}>
         <span className="inline-flex items-center gap-1">
-          <Swords className="w-3.5 h-3.5" /> Builder
+          <Swords className="w-3.5 h-3.5" /> {t("navBuilder")}
         </span>
       </NavLink>
       <NavLink to="/gallery" className={linkClass} onClick={onItemClick}>
         <span className="inline-flex items-center gap-1">
-          <BookOpen className="w-3.5 h-3.5" /> Galerie
+          <BookOpen className="w-3.5 h-3.5" /> {t("navGallery")}
         </span>
       </NavLink>
       {user && (
         <NavLink to="/my-lists" className={linkClass} onClick={onItemClick}>
           <span className="inline-flex items-center gap-1">
-            <User className="w-3.5 h-3.5" /> Mes listes
+            <User className="w-3.5 h-3.5" /> {t("navMyLists")}
           </span>
         </NavLink>
       )}
@@ -69,7 +70,7 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
             onClick={handleLogout}
             className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-red-400 transition-colors inline-flex items-center gap-1"
           >
-            <LogOut className="w-3.5 h-3.5" /> Déconnexion
+            <LogOut className="w-3.5 h-3.5" /> {t("navLogout")}
           </button>
         ) : (
           <Link
@@ -77,7 +78,7 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
             onClick={onItemClick}
             className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-[#cc6512] transition-colors inline-flex items-center gap-1"
           >
-            <LogIn className="w-3.5 h-3.5" /> Connexion
+            <LogIn className="w-3.5 h-3.5" /> {t("navLogin")}
           </Link>
         ))}
     </>
@@ -152,7 +153,7 @@ function Layout({ children }: { children: React.ReactNode }) {
         <div className="absolute top-0 left-0 w-full -translate-y-[99%] leading-none pointer-events-none">
           <img src={footerBorder} alt="" className="w-full h-auto object-cover opacity-100" />
         </div>
-        <div className="container mx-auto px-4 text-center">
+        <div className="container mx-auto px-4 text-center space-y-2">
           <p className="text-stone-400 text-sm font-medium opacity-80">
             {t("footerProto")}:{" "}
             <a
@@ -163,6 +164,9 @@ function Layout({ children }: { children: React.ReactNode }) {
             >
               www.pillagewargame.com
             </a>
+          </p>
+          <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">
+            v{__APP_VERSION__}
           </p>
         </div>
       </footer>

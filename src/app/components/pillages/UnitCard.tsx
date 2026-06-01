@@ -2,10 +2,11 @@ import React from "react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil } from "lucide-react";
+import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X } from "lucide-react";
 import { ArmyUnit, Faction, Equipment, UnitRole } from "../../data/gameData";
 import { useTranslation } from "./TranslationContext";
 import { UnitForm } from "./UnitForm";
+import { getUnitDisplayName, getUnitDisplayIcon } from "./unitNaming";
 
 interface UnitCardProps {
   unit: ArmyUnit;
@@ -13,15 +14,18 @@ interface UnitCardProps {
   onRemove: (instanceId: string) => void;
   onUpdateQuantity?: (instanceId: string, newQuantity: number) => void;
   onUpdateUnit?: (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number) => void;
+  onUpdateCustomName?: (instanceId: string, customName: string) => void;
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit }: UnitCardProps) {
-  const { t, tData } = useTranslation();
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName }: UnitCardProps) {
+  const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [isRenaming, setIsRenaming] = React.useState(false);
+  const [nameDraft, setNameDraft] = React.useState<string>(unit.customName ?? "");
   const unitType = faction.units.find(u => u.id === unit.unitTypeId);
-  
+
   if (!unitType) return null;
 
   const getEquipment = (ids: string[]) => {
@@ -29,7 +33,7 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
   };
 
   const equipment = getEquipment(unit.equipment);
-  
+
   const singleUnitCost = unitType.baseCost + equipment.reduce((sum, e) => {
     const cost = e.costs[unitType.id as UnitRole];
     return sum + (cost || 0);
@@ -38,9 +42,19 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
   const quantity = unit.quantity || 1;
   const totalCost = singleUnitCost * quantity;
 
-  const UnitIcon = unitType.icon;
+  const UnitIcon = getUnitDisplayIcon(unit, faction);
 
-  const unitName = tData('roles', unitType.id, unitType.name);
+  const unitName = getUnitDisplayName(unit, faction, language, tData);
+  const hasCustomName = Boolean(unit.customName && unit.customName.trim());
+
+  const commitRename = () => {
+    onUpdateCustomName?.(unit.instanceId, nameDraft.trim());
+    setIsRenaming(false);
+  };
+  const cancelRename = () => {
+    setNameDraft(unit.customName ?? "");
+    setIsRenaming(false);
+  };
 
   const renderEquipmentList = (type: string, icon: any) => {
     const items = equipment.filter(e => e.type === type);
@@ -80,13 +94,55 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
             </div>
 
             <div className="space-y-3 w-full">
-              <div className="flex items-baseline justify-between w-full">
-                  <h3 className="font-bold text-lg font-serif tracking-wide text-white flex items-center gap-2">
-                    {unitName}
-                    {quantity > 1 && <span className="text-xs text-[#cc6512] font-sans font-bold bg-[#cc6512]/10 px-1.5 py-0.5 rounded-none border border-[#cc6512]/20">x{quantity}</span>}
-                  </h3>
+              <div className="flex items-baseline justify-between w-full gap-2">
+                  {isRenaming ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        autoFocus
+                        value={nameDraft}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitRename();
+                          if (e.key === "Escape") cancelRename();
+                        }}
+                        placeholder={unitName}
+                        className="flex-1 bg-black/50 border border-white/20 px-2 py-1 text-white font-serif rounded-none focus:outline-none focus:border-[#cc6512]"
+                      />
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={commitRename} aria-label="Valider">
+                        <Check className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-stone-400" onClick={cancelRename} aria-label="Annuler">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <h3 className="font-bold text-lg font-serif tracking-wide text-white flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="truncate">{unitName}</span>
+                      {hasCustomName && (
+                        <span className="text-[10px] uppercase tracking-widest text-stone-500 font-sans font-medium">
+                          ({tData("roles", unitType.id, unitType.name)})
+                        </span>
+                      )}
+                      {quantity > 1 && (
+                        <span className="text-xs text-[#cc6512] font-sans font-bold bg-[#cc6512]/10 px-1.5 py-0.5 rounded-none border border-[#cc6512]/20">
+                          x{quantity}
+                        </span>
+                      )}
+                      {onUpdateCustomName && (
+                        <button
+                          type="button"
+                          onClick={() => { setNameDraft(unit.customName ?? ""); setIsRenaming(true); }}
+                          className="text-stone-500 hover:text-[#cc6512] transition-colors p-0.5"
+                          aria-label="Renommer l'unité"
+                          title="Renommer l'unité"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </h3>
+                  )}
                   {/* Mobile Price Badge */}
-                  <Badge variant="outline" className="sm:hidden text-sm font-bold px-2 py-0.5 border-[#cc6512]/20 text-[#cc6512] bg-[#cc6512]/5">
+                  <Badge variant="outline" className="sm:hidden text-sm font-bold px-2 py-0.5 border-[#cc6512]/20 text-[#cc6512] bg-[#cc6512]/5 shrink-0">
                       {totalCost} PO
                   </Badge>
               </div>
@@ -105,9 +161,16 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
           <div className="flex flex-row sm:flex-col items-center sm:items-end gap-4 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0 mt-2 sm:mt-0">
             <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">{t('totalCost')}</span>
-                <span className="text-xl font-bold font-['UnifrakturCook'] text-[#cc6512]">
-                {totalCost} PO
-                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold font-['UnifrakturCook'] text-[#cc6512]">
+                    {totalCost} PO
+                  </span>
+                  {quantity > 1 && (
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-stone-400">
+                      ({singleUnitCost}/u)
+                    </span>
+                  )}
+                </div>
             </div>
             
             <div className="flex items-center gap-3">

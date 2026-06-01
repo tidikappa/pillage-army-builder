@@ -119,19 +119,30 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
       let next = [...prev];
 
       if (type === 'protection') {
-        if (eqId === 'prot_none') {
+        // "Sans protection" id varies by faction: prot_none, protection_none, etc.
+        const noneItem = faction.availableEquipment.find(
+          item => item.type === 'protection' && item.name === 'Sans protection'
+        );
+        const noneId = noneItem?.id;
+        const isNoneSelection = noneId !== undefined && eqId === noneId;
+
+        if (isNoneSelection) {
+           // Selecting "no protection" wipes any armour/shield.
            return next.filter(id => {
              const item = faction.availableEquipment.find(e => e.id === id);
              return item?.type !== 'protection';
            }).concat(eqId);
         }
-        next = next.filter(id => id !== 'prot_none');
+
+        // Selecting an armour / shield: kick out "no protection" first.
+        if (noneId) next = next.filter(id => id !== noneId);
+
         if (next.includes(eqId)) {
            next = next.filter(id => id !== eqId);
            const hasProtection = next.some(id => faction.availableEquipment.find(e => e.id === id)?.type === 'protection');
-           if (!hasProtection) {
-              const none = faction.availableEquipment.find(e => e.id === 'prot_none');
-              if (none && none.costs[selectedUnitId as UnitRole] !== null) next.push('prot_none');
+           if (!hasProtection && noneId) {
+              const noneCost = noneItem?.costs[selectedUnitId as UnitRole];
+              if (noneCost !== null && noneCost !== undefined) next.push(noneId);
            }
         } else {
            next.push(eqId);
@@ -143,7 +154,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
               next.push('mel_base');
            }
         }
-      } 
+      }
       else if (type === 'special') {
         if (next.includes(eqId)) next = next.filter(id => id !== eqId);
         else next.push(eqId);
@@ -345,7 +356,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
             <DialogHeader className="pb-4 border-b border-white/5 shrink-0">
             <div className="flex items-center justify-between">
                 <DialogTitle className="text-3xl font-['UnifrakturCook'] tracking-wide text-white drop-shadow-sm">
-                    {t('recruitTitle').toLowerCase()}
+                    {t('recruitTitle')}
                 </DialogTitle>
             </div>
             <DialogDescription className="text-stone-500 text-sm mt-1">
@@ -416,7 +427,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         {type === 'melee' && <Sword className="w-4 h-4 text-[#cc6512]" />}
                         {type === 'ranged' && <Crosshair className="w-4 h-4 text-[#cc6512]" />}
                         <Label className="text-xs font-bold uppercase tracking-[0.15em]">
-                            {type === 'protection' ? (tData('equipment', 'protection', 'Protection')) : type === 'melee' ? (tData('equipment', 'melee', 'Melee')) : (tData('equipment', 'ranged', 'Ranged'))}
+                            {type === 'protection' ? t('protectionLabel') : type === 'melee' ? t('meleeLabel') : t('rangedLabel')}
                         </Label>
                         </div>
 

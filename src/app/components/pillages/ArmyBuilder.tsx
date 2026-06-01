@@ -254,6 +254,10 @@ export function ArmyBuilder() {
     toast.success(t("unitUpdated"));
   };
 
+  const handleUpdateCustomName = (instanceId: string, customName: string) => {
+    setArmy(army.map(u => u.instanceId === instanceId ? { ...u, customName: customName || undefined } : u));
+  };
+
   const handleReset = () => {
     if (confirm(t("confirmReset"))) {
       setArmy([]);
@@ -441,7 +445,13 @@ export function ArmyBuilder() {
             ruleY += (splitText.length * 5);
         });
     }
-    doc.save(`armee_pillage_${selectedFaction.id}.pdf`);
+    const slug = (s: string) =>
+      s.trim().toLowerCase()
+        .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "armee";
+    const factionSlug = slug(tData("factions", selectedFaction.id, selectedFaction.name));
+    const nameSlug = slug(armyName || "armee");
+    doc.save(`${nameSlug}_${factionSlug}_${currentPoints}po.pdf`);
     toast.success(t("pdfDownloaded"));
   };
 
@@ -648,19 +658,19 @@ export function ArmyBuilder() {
                 onClick={() => handleSave(false)}
                 disabled={army.length === 0 || saving}
                 className="bg-stone-700 hover:bg-stone-600 text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-all"
-                title={user ? "Sauvegarder dans Mes listes (privée)" : "Connexion requise"}
+                title={user ? t("save") : t("save")}
               >
                 <Save className="w-4 h-4 mr-2" />
-                {editingId ? "Mettre à jour" : "Sauvegarder"}
+                {editingId ? t("update") : t("save")}
               </Button>
               <Button
                 onClick={() => handleSave(true)}
                 disabled={army.length === 0 || saving}
                 className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-all"
-                title={user ? "Publier dans la galerie publique" : "Connexion requise"}
+                title={t("publish")}
               >
                 <Globe className="w-4 h-4 mr-2" />
-                Publier
+                {t("publish")}
               </Button>
               <Button
                 onClick={handleExportPDF}
@@ -702,18 +712,55 @@ export function ArmyBuilder() {
                 <p className="text-stone-600 text-sm font-medium uppercase tracking-widest">{t('emptyStateSubtitle')}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {army.map((unit) => (
-                    <UnitCard 
-                    key={unit.instanceId} 
-                    unit={unit} 
-                    faction={selectedFaction} 
-                    onRemove={handleRemoveUnit}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onUpdateUnit={handleUpdateUnit}
-                    />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 gap-4">
+                  {army.map((unit) => (
+                      <UnitCard
+                      key={unit.instanceId}
+                      unit={unit}
+                      faction={selectedFaction}
+                      onRemove={handleRemoveUnit}
+                      onUpdateQuantity={handleUpdateQuantity}
+                      onUpdateUnit={handleUpdateUnit}
+                      onUpdateCustomName={handleUpdateCustomName}
+                      />
+                  ))}
+                </div>
+
+                {/* Recap : PO consommés */}
+                <div
+                  className={`mt-6 p-5 border-2 bg-white shadow-lg ${
+                    isOverBudget ? "border-red-700" : "border-[#cc6512]"
+                  } flex flex-wrap items-center justify-between gap-4`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Wallet className={`w-6 h-6 ${isOverBudget ? "text-red-700" : "text-[#cc6512]"}`} />
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-stone-700 font-bold">
+                        {t("spent")} / {t("budgetLabel")}
+                      </div>
+                      <div className="font-['UnifrakturCook'] text-3xl leading-none mt-1">
+                        <span className={isOverBudget ? "text-red-700" : "text-[#cc6512]"}>
+                          {currentPoints}
+                        </span>
+                        <span className="text-stone-700"> / {budget} PO</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs uppercase tracking-widest text-stone-700 font-bold">
+                      {t("remaining")}
+                    </div>
+                    <div
+                      className={`font-['UnifrakturCook'] text-3xl leading-none mt-1 ${
+                        remainingPoints < 0 ? "text-red-700" : "text-stone-900"
+                      }`}
+                    >
+                      {remainingPoints} PO
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </div>
 

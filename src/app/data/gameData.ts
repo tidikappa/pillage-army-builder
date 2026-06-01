@@ -634,4 +634,5 @@ export interface ArmyUnit {
   unitTypeId: UnitRole;
   equipment: string[]; // Array of equipment IDs
   quantity: number;
+  customName?: string;
 }

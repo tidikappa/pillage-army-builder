@@ -12,7 +12,7 @@ import { toast } from "sonner";
 const ALL = "__all__";
 
 export function GalleryPage() {
-  const { tData } = useTranslation();
+  const { t, tData } = useTranslation();
   const { isAdmin } = useAuth();
   const [armies, setArmies] = React.useState<SavedArmy[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -73,15 +73,15 @@ export function GalleryPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">
-        Galerie des armées
+        {t("galleryTitle")}
       </h2>
 
       {isAdmin && (
         <div className="bg-red-950/60 border border-red-700/50 px-4 py-3 flex items-center gap-3">
           <ShieldAlert className="w-5 h-5 text-red-400 shrink-0" />
           <p className="text-sm text-red-100">
-            <span className="font-bold uppercase tracking-widest">Mode modérateur actif.</span>{" "}
-            Vous pouvez supprimer n'importe quelle liste publiée.
+            <span className="font-bold uppercase tracking-widest">{t("moderatorModeActive")}</span>{" "}
+            {t("moderatorModeHelp")}
           </p>
         </div>
       )}
@@ -90,7 +90,7 @@ export function GalleryPage() {
       {armies.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-widest text-stone-200 mr-1">
-            Faction :
+            {t("factionFilterLabel")}
           </span>
           <button
             onClick={() => setFactionFilter(ALL)}
@@ -100,7 +100,7 @@ export function GalleryPage() {
                 : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
             }`}
           >
-            Toutes ({armies.length})
+            {t("allFactionsLabel")} ({armies.length})
           </button>
           {availableFactions.map((f) => {
             const count = armies.filter((a) => a.faction_id === f.id).length;
@@ -125,10 +125,10 @@ export function GalleryPage() {
       {loading && <p className="text-stone-200">Chargement...</p>}
       {error && <p className="text-red-400">{error}</p>}
       {!loading && !error && armies.length === 0 && (
-        <p className="text-stone-200 italic">Aucune liste publiée pour l'instant.</p>
+        <p className="text-stone-200 italic">{t("noPublicArmies")}</p>
       )}
       {!loading && !error && armies.length > 0 && filtered.length === 0 && (
-        <p className="text-stone-200 italic">Aucune armée pour cette faction.</p>
+        <p className="text-stone-200 italic">{t("noArmiesForFaction")}</p>
       )}
 
       <ul className="space-y-4">

@@ -3,6 +3,7 @@ import { factions, ArmyUnit, UnitRole, Equipment } from "../../data/gameData";
 import { Card, CardContent } from "../ui/card";
 import { Shield, Sword, Crosshair, Zap, Sparkles } from "lucide-react";
 import { useTranslation } from "./TranslationContext";
+import { getUnitDisplayName, getUnitDisplayIcon } from "./unitNaming";
 
 interface ArmyViewProps {
   factionId: string;
@@ -11,7 +12,7 @@ interface ArmyViewProps {
 }
 
 export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
-  const { t, tData } = useTranslation();
+  const { t, tData, language } = useTranslation();
   const faction = factions.find((f) => f.id === factionId);
 
   if (!faction) {
@@ -56,15 +57,24 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
               equipment.reduce((s, e) => s + (e.costs[unit.unitTypeId as UnitRole] ?? 0), 0);
             const qty = unit.quantity || 1;
 
+            const UnitIcon = getUnitDisplayIcon(unit, faction);
+            const displayName = getUnitDisplayName(unit, faction, language, tData);
             return (
               <li key={idx}>
                 <Card className="bg-black/40 border-white/10 rounded-none">
                   <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-serif text-stone-200">
-                        {tData("roles", ut.id, ut.name)} <span className="text-stone-500">×{qty}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="font-serif text-stone-200 flex items-center gap-2 min-w-0">
+                        <UnitIcon className="w-4 h-4 text-[#cc6512] shrink-0" aria-hidden="true" />
+                        <span className="truncate">{displayName}</span>
+                        <span className="text-stone-500 shrink-0">×{qty}</span>
                       </div>
-                      <div className="text-sm text-[#cc6512] font-bold">{singleCost * qty} po</div>
+                      <div className="text-sm text-[#cc6512] font-bold shrink-0">
+                        {singleCost * qty} po
+                        {qty > 1 && (
+                          <span className="text-[10px] font-mono text-stone-400 ml-1">({singleCost}/u)</span>
+                        )}
+                      </div>
                     </div>
                     <EquipmentLine icon={Shield} items={equipment.filter((e) => e.type === "protection")} unit={unit} faction={faction} tData={tData} />
                     <EquipmentLine icon={Sword} items={equipment.filter((e) => e.type === "melee")} unit={unit} faction={faction} tData={tData} />

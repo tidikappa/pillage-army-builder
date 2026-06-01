@@ -5,6 +5,24 @@ export type Language = 'fr' | 'en';
 export const translations: Record<Language, any> = {
   fr: {
     ui: {
+      // Navigation
+      navBuilder: "Builder",
+      navGallery: "Galerie",
+      navMyLists: "Mes listes",
+      navLogin: "Connexion",
+      navLogout: "Déconnexion",
+      galleryTitle: "Galerie des armées",
+      myListsTitle: "Mes listes",
+      factionFilterLabel: "Faction :",
+      allFactionsLabel: "Toutes",
+      noPublicArmies: "Aucune liste publiée pour l'instant.",
+      noArmiesForFaction: "Aucune armée pour cette faction.",
+      moderatorModeActive: "Mode modérateur actif.",
+      moderatorModeHelp: "Vous pouvez supprimer n'importe quelle liste publiée.",
+      // Equipment category labels (sidebar in recruitment dialog)
+      protectionLabel: "Protection",
+      meleeLabel: "Corps à corps",
+      rangedLabel: "À distance",
       appTitle: "Seigneur de Guerre",
       appSubtitle: "Sélectionnez une faction dans le panneau de configuration pour commencer à forger votre légende.",
       configTitle: "Configuration de Guerre",
@@ -23,6 +41,9 @@ export const translations: Record<Language, any> = {
       factionBonus: "Bonus de Faction",
       yourArmy: "Votre Armée",
       exportPdf: "EXPORTER PDF",
+      save: "Sauvegarder",
+      update: "Mettre à jour",
+      publish: "Publier",
       reset: "DISSOUDRE",
       emptyStateTitle: "La plaine est vide",
       emptyStateSubtitle: "Rassemblez vos troupes ci-dessous",
@@ -77,6 +98,24 @@ export const translations: Record<Language, any> = {
   },
   en: {
     ui: {
+      // Navigation
+      navBuilder: "Builder",
+      navGallery: "Gallery",
+      navMyLists: "My lists",
+      navLogin: "Login",
+      navLogout: "Logout",
+      galleryTitle: "Army gallery",
+      myListsTitle: "My lists",
+      factionFilterLabel: "Faction:",
+      allFactionsLabel: "All",
+      noPublicArmies: "No published lists yet.",
+      noArmiesForFaction: "No army for this faction.",
+      moderatorModeActive: "Moderator mode active.",
+      moderatorModeHelp: "You can delete any published list.",
+      // Equipment category labels (sidebar in recruitment dialog)
+      protectionLabel: "Protection",
+      meleeLabel: "Melee",
+      rangedLabel: "Ranged",
       appTitle: "Warlord",
       appSubtitle: "Select a faction in the configuration panel to start forging your legend.",
       configTitle: "War Configuration",
@@ -95,6 +134,9 @@ export const translations: Record<Language, any> = {
       factionBonus: "Faction Bonus",
       yourArmy: "Your Army",
       exportPdf: "EXPORT PDF",
+      save: "Save",
+      update: "Update",
+      publish: "Publish",
       reset: "DISBAND",
       emptyStateTitle: "The plain is empty",
       emptyStateSubtitle: "Gather your troops below",
@@ -196,17 +238,17 @@ export const translations: Record<Language, any> = {
       equipment: {
         // Protection
         prot_none: "No protection",
-        prot_armor: "Armor",
+        prot_armor: "Armour",
         prot_shield: "Shield",
         protection_none: "No protection",
-        protection_armor: "Armor",
+        protection_armor: "Armour",
         protection_shield: "Shield",
-        
+
         // Melee
         mel_imp: "Improvised weapon",
         mel_spear: "Spear",
         mel_base: "Base weapon",
-        mel_axe: "Danish axe",
+        mel_axe: "Dane axe",
         weapon_improvised: "Improvised weapon",
         weapon_spear: "Spear",
         weapon_base: "Base weapon",
