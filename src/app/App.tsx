@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { ArmyBuilder } from "./components/pillages/ArmyBuilder";
 import { GalleryPage } from "./components/pages/GalleryPage";
 import { MyListsPage } from "./components/pages/MyListsPage";
@@ -10,7 +10,7 @@ import { TranslationProvider, useTranslation } from "./components/pillages/Trans
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
-import { Globe, LogIn, LogOut, BookOpen, User } from "lucide-react";
+import { Globe, LogIn, LogOut, BookOpen, User, Menu, X } from "lucide-react";
 
 function LanguageSelector() {
   const { language, setLanguage } = useTranslation();
@@ -29,47 +29,105 @@ function LanguageSelector() {
   );
 }
 
-function TopNav() {
+function NavItems({ onItemClick }: { onItemClick?: () => void }) {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `text-xs uppercase font-serif tracking-widest px-3 py-1 transition-colors ${
+    `text-xs uppercase font-serif tracking-widest px-3 py-2 transition-colors ${
       isActive ? "text-[#cc6512]" : "text-stone-300 hover:text-[#cc6512]"
     }`;
 
   const handleLogout = async () => {
+    onItemClick?.();
     await signOut();
     navigate("/");
   };
 
   return (
-    <div className="absolute top-4 right-4 z-50 flex items-center gap-3 bg-[#1c1917]/70 px-3 py-2 border border-white/10 backdrop-blur-sm">
-      <NavLink to="/" className={linkClass} end>
+    <>
+      <NavLink to="/" className={linkClass} end onClick={onItemClick}>
         Builder
       </NavLink>
-      <NavLink to="/gallery" className={linkClass}>
-        <span className="inline-flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> Galerie</span>
+      <NavLink to="/gallery" className={linkClass} onClick={onItemClick}>
+        <span className="inline-flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5" /> Galerie
+        </span>
       </NavLink>
       {user && (
-        <NavLink to="/my-lists" className={linkClass}>
-          <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5" /> Mes listes</span>
+        <NavLink to="/my-lists" className={linkClass} onClick={onItemClick}>
+          <span className="inline-flex items-center gap-1">
+            <User className="w-3.5 h-3.5" /> Mes listes
+          </span>
         </NavLink>
       )}
-      {!loading && (
-        user ? (
-          <button onClick={handleLogout} className="text-xs uppercase font-serif tracking-widest px-3 py-1 text-stone-300 hover:text-red-400 transition-colors inline-flex items-center gap-1">
+      {!loading &&
+        (user ? (
+          <button
+            onClick={handleLogout}
+            className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-red-400 transition-colors inline-flex items-center gap-1"
+          >
             <LogOut className="w-3.5 h-3.5" /> Déconnexion
           </button>
         ) : (
-          <Link to="/login" className="text-xs uppercase font-serif tracking-widest px-3 py-1 text-stone-300 hover:text-[#cc6512] transition-colors inline-flex items-center gap-1">
+          <Link
+            to="/login"
+            onClick={onItemClick}
+            className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-[#cc6512] transition-colors inline-flex items-center gap-1"
+          >
             <LogIn className="w-3.5 h-3.5" /> Connexion
           </Link>
-        )
+        ))}
+    </>
+  );
+}
+
+function TopNav() {
+  const [open, setOpen] = React.useState(false);
+  const location = useLocation();
+
+  React.useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  return (
+    <>
+      {/* Desktop nav */}
+      <div className="hidden md:flex absolute top-4 right-4 z-50 items-center gap-3 bg-[#1c1917]/70 px-3 py-2 border border-white/10 backdrop-blur-sm">
+        <NavItems />
+        <div className="h-4 w-px bg-white/10" />
+        <LanguageSelector />
+      </div>
+
+      {/* Mobile burger button */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+        aria-expanded={open}
+        className="md:hidden absolute top-4 right-4 z-[60] flex items-center justify-center w-11 h-11 bg-[#1c1917]/80 border border-white/10 backdrop-blur-sm text-stone-200 hover:text-[#cc6512] transition-colors"
+      >
+        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </button>
+
+      {/* Mobile dropdown panel */}
+      {open && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/60"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="md:hidden fixed top-16 right-4 left-4 z-50 bg-[#1c1917]/95 border border-white/10 backdrop-blur-md p-4 flex flex-col gap-1 shadow-2xl">
+            <NavItems onItemClick={() => setOpen(false)} />
+            <div className="h-px bg-white/10 my-2" />
+            <div className="px-3 py-1">
+              <LanguageSelector />
+            </div>
+          </div>
+        </>
       )}
-      <div className="h-4 w-px bg-white/10" />
-      <LanguageSelector />
-    </div>
+    </>
   );
 }
 
