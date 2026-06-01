@@ -165,6 +165,9 @@ function Layout({ children }: { children: React.ReactNode }) {
               www.pillagewargame.com
             </a>
           </p>
+          <p className="text-xs text-stone-400 opacity-80">
+            Créé par <span className="text-[#cc6512] font-bold">@tidikappa</span>
+          </p>
           <p className="text-[10px] font-mono uppercase tracking-widest text-stone-500">
             v{__APP_VERSION__}
           </p>

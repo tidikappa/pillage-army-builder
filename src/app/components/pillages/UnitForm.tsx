@@ -5,7 +5,118 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Checkbox } from "../ui/checkbox";
-import { Faction, UnitType, Equipment, UnitRole } from "../../data/gameData";
+import { Faction, UnitType, Equipment, UnitRole, factions as allFactions } from "../../data/gameData";
+
+/**
+ * Resolves cross-rule equipment conflicts. The user's most recent action
+ * (`lastAddedId`) wins — items it conflicts with are dropped.
+ *
+ * Rules covered:
+ * - Spear ↔ any ranged weapon: mutually exclusive.
+ * - Banner XOR Horn on the same unit.
+ * - Banner or Horn → no ranged weapon, no Danish axe.
+ * - War dogs → forces "no protection" and limits melee to improvised / base / spear.
+ */
+function resolveEquipmentConflicts(
+  equipment: string[],
+  lastAddedId: string | null,
+  ctxFaction: Faction
+): string[] {
+  let next = [...equipment];
+  const has = (id: string) => next.includes(id);
+  const drop = (...ids: string[]) => {
+    next = next.filter((id) => !ids.includes(id));
+  };
+
+  const protectionEquip = ctxFaction.availableEquipment.filter((e) => e.type === "protection");
+  const rangedEquip = ctxFaction.availableEquipment.filter((e) => e.type === "ranged");
+  const meleeEquip = ctxFaction.availableEquipment.filter((e) => e.type === "melee");
+  const noneProtection = protectionEquip.find((e) => e.name === "Sans protection");
+  const noneRanged = rangedEquip.find((e) => e.name === "Aucune");
+
+  const isRealRanged = (id: string) => {
+    const item = rangedEquip.find((e) => e.id === id);
+    return item !== undefined && item.name !== "Aucune";
+  };
+  const isArmorOrShield = (id: string) => {
+    const item = protectionEquip.find((e) => e.id === id);
+    return item !== undefined && item.name !== "Sans protection";
+  };
+  const isMelee = (id: string) => meleeEquip.some((e) => e.id === id);
+  const forceNoRanged = () => {
+    const removed = next.filter(isRealRanged);
+    if (removed.length > 0) {
+      drop(...removed);
+      if (noneRanged && !has(noneRanged.id)) next.push(noneRanged.id);
+    }
+  };
+
+  // --- Spear ↔ Ranged: last action wins ---
+  if (lastAddedId === "mel_spear" && has("mel_spear")) {
+    forceNoRanged();
+  } else if (lastAddedId && isRealRanged(lastAddedId) && has(lastAddedId) && has("mel_spear")) {
+    drop("mel_spear");
+  }
+
+  // --- Banner XOR Horn on same unit: last one added wins ---
+  if (lastAddedId === "spec_banner" && has("spec_banner")) drop("spec_horn");
+  if (lastAddedId === "spec_horn" && has("spec_horn")) drop("spec_banner");
+
+  // --- Banner or Horn ↔ Axe / Ranged ---
+  if (lastAddedId === "spec_banner" || lastAddedId === "spec_horn") {
+    if (has(lastAddedId)) {
+      drop("mel_axe");
+      forceNoRanged();
+    }
+  } else if ((has("spec_banner") || has("spec_horn")) && lastAddedId) {
+    // The user just added an axe or a ranged weapon → kick out the banner/horn.
+    if (lastAddedId === "mel_axe" && has("mel_axe")) {
+      drop("spec_banner", "spec_horn");
+    }
+    if (isRealRanged(lastAddedId) && has(lastAddedId)) {
+      drop("spec_banner", "spec_horn");
+    }
+  }
+
+  // --- War dogs ↔ protection / restricted melee ---
+  const allowedDogMelee = new Set(["mel_imp", "mel_base", "mel_spear"]);
+
+  if (lastAddedId === "spec_dogs" && has("spec_dogs")) {
+    // The user just added dogs → adjust protection + melee around it, and
+    // drop incompatible items (banner, real ranged).
+    const protToRemove = next.filter(isArmorOrShield);
+    if (protToRemove.length > 0) drop(...protToRemove);
+    if (noneProtection && !has(noneProtection.id)) next.push(noneProtection.id);
+
+    const meleeToRemove = next.filter((id) => isMelee(id) && !allowedDogMelee.has(id));
+    if (meleeToRemove.length > 0) drop(...meleeToRemove);
+    if (!next.some(isMelee)) {
+      const base = meleeEquip.find((e) => e.id === "mel_base");
+      if (base) next.push(base.id);
+    }
+
+    drop("spec_banner");
+    forceNoRanged();
+  } else if (has("spec_dogs") && lastAddedId) {
+    // Dogs are kept from before; the user added something else. If it's an
+    // armor/shield, a banned melee, a real ranged weapon, or a banner, drop
+    // the dogs to honour the new choice.
+    if (isArmorOrShield(lastAddedId) && has(lastAddedId)) {
+      drop("spec_dogs");
+    }
+    if (isMelee(lastAddedId) && !allowedDogMelee.has(lastAddedId) && has(lastAddedId)) {
+      drop("spec_dogs");
+    }
+    if (isRealRanged(lastAddedId) && has(lastAddedId)) {
+      drop("spec_dogs");
+    }
+    if (lastAddedId === "spec_banner" && has("spec_banner")) {
+      drop("spec_dogs");
+    }
+  }
+
+  return next;
+}
 import { Plus, Minus, Shield, Sword, Crosshair, Zap, Sparkles, X } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
@@ -15,7 +126,12 @@ import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.pn
 
 interface UnitFormProps {
   faction: Faction;
-  onAddUnit: (unitTypeId: string, equipmentIds: string[], quantity: number) => void;
+  onAddUnit: (
+    unitTypeId: string,
+    equipmentIds: string[],
+    quantity: number,
+    sourceFactionId?: string
+  ) => void;
   currentPoints: number;
   maxPoints: number;
   isOpen?: boolean;
@@ -25,6 +141,7 @@ interface UnitFormProps {
     unitTypeId: string;
     equipment: string[];
     quantity: number;
+    sourceFactionId?: string;
   };
 }
 
@@ -34,13 +151,37 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
   const [quantity, setQuantity] = React.useState(1);
   const [internalIsOpen, setInternalIsOpen] = React.useState(false);
-  
+  // When set, the user has chosen a mercenary from this other faction.
+  const [mercFactionId, setMercFactionId] = React.useState<string | null>(null);
+
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const setIsOpen = onOpenChange || setInternalIsOpen;
-  
+
   const optionsRef = React.useRef<HTMLDivElement>(null);
 
-  const selectedUnit = faction.units.find((u) => u.id === selectedUnitId);
+  // Effective faction: the mercenary's source faction if set, otherwise the
+  // army's main faction. Used for unit lookup, equipment options and rules.
+  const effectiveFaction = React.useMemo(() => {
+    if (mercFactionId) {
+      return allFactions.find((f) => f.id === mercFactionId) ?? faction;
+    }
+    return faction;
+  }, [faction, mercFactionId]);
+
+  const selectedUnit = effectiveFaction.units.find((u) => u.id === selectedUnitId);
+
+  // Available mercenaries: only when the army's faction is Byzantine.
+  // Rule: all non-warlord units from other factions are recruitable.
+  const mercenaries = React.useMemo(() => {
+    if (faction.id !== "byzantines") return [];
+    return allFactions
+      .filter((f) => f.id !== "byzantines")
+      .flatMap((f) =>
+        f.units
+          .filter((u) => u.id !== "warlord")
+          .map((u) => ({ sourceFaction: f, unit: u }))
+      );
+  }, [faction.id]);
 
   // Reset form when opening
   React.useEffect(() => {
@@ -50,11 +191,13 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         setSelectedUnitId(unitToEdit.unitTypeId);
         setSelectedEquipment(unitToEdit.equipment);
         setQuantity(unitToEdit.quantity);
+        setMercFactionId(unitToEdit.sourceFactionId ?? null);
       } else {
         // Reset for new unit
         setSelectedUnitId("");
         setSelectedEquipment([]);
         setQuantity(1);
+        setMercFactionId(null);
       }
     }
   }, [isOpen, editMode, unitToEdit]);
@@ -72,38 +215,40 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   React.useEffect(() => {
     // Skip auto-initialization when in edit mode
     if (editMode && unitToEdit) return;
-    
+
     if (selectedUnitId) {
       setQuantity(1);
-      // Special defaults for Byzantine Kataphraktoi (Mandatory equipment)
-      if (faction.id === 'byzantines' && selectedUnitId === 'huscarl') {
+      // Special defaults for Byzantine Kataphraktoi (Mandatory equipment).
+      // Only applies to native Byzantine huscarl, not mercs (mercs use their
+      // own faction's defaults).
+      if (effectiveFaction.id === 'byzantines' && selectedUnitId === 'huscarl' && !mercFactionId) {
           setSelectedEquipment([
-              'protection_shield', 
-              'protection_armor', 
-              'weapon_spear', 
-              'weapon_base', 
+              'protection_shield',
+              'protection_armor',
+              'weapon_spear',
+              'weapon_base',
               'spec_horse'
           ]);
           return;
       }
 
       const defaults = ['protection', 'melee', 'ranged'].map(type => {
-        const freeOption = faction.availableEquipment.find(e => {
+        const freeOption = effectiveFaction.availableEquipment.find(e => {
            if (e.type !== type) return false;
            const cost = e.costs[selectedUnitId as UnitRole];
            return cost === 0;
         });
         return freeOption ? freeOption.id : null;
       }).filter(Boolean) as string[];
-      
-      setSelectedEquipment(defaults); 
+
+      setSelectedEquipment(defaults);
     }
-  }, [selectedUnitId, faction, editMode, unitToEdit]);
+  }, [selectedUnitId, effectiveFaction, mercFactionId, editMode, unitToEdit]);
 
   const handleEquipmentToggle = (eqId: string, type: string) => {
     setSelectedEquipment((prev) => {
       // Special restriction for Byzantine Kataphraktoi
-      if (faction.id === 'byzantines' && selectedUnitId === 'huscarl') {
+      if (effectiveFaction.id === 'byzantines' && selectedUnitId === 'huscarl') {
           const mandatoryIds = ['protection_shield', 'protection_armor', 'weapon_spear', 'weapon_base', 'spec_horse'];
           
           // Prevent modifying mandatory protection/melee
@@ -113,14 +258,14 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
           if (type === 'special' && mandatoryIds.includes(eqId)) return prev;
       }
 
-      const eq = faction.availableEquipment.find(e => e.id === eqId);
+      const eq = effectiveFaction.availableEquipment.find(e => e.id === eqId);
       if (!eq) return prev;
 
       let next = [...prev];
 
       if (type === 'protection') {
         // "Sans protection" id varies by faction: prot_none, protection_none, etc.
-        const noneItem = faction.availableEquipment.find(
+        const noneItem = effectiveFaction.availableEquipment.find(
           item => item.type === 'protection' && item.name === 'Sans protection'
         );
         const noneId = noneItem?.id;
@@ -129,7 +274,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         if (isNoneSelection) {
            // Selecting "no protection" wipes any armour/shield.
            return next.filter(id => {
-             const item = faction.availableEquipment.find(e => e.id === id);
+             const item = effectiveFaction.availableEquipment.find(e => e.id === id);
              return item?.type !== 'protection';
            }).concat(eqId);
         }
@@ -139,7 +284,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
 
         if (next.includes(eqId)) {
            next = next.filter(id => id !== eqId);
-           const hasProtection = next.some(id => faction.availableEquipment.find(e => e.id === id)?.type === 'protection');
+           const hasProtection = next.some(id => effectiveFaction.availableEquipment.find(e => e.id === id)?.type === 'protection');
            if (!hasProtection && noneId) {
               const noneCost = noneItem?.costs[selectedUnitId as UnitRole];
               if (noneCost !== null && noneCost !== undefined) next.push(noneId);
@@ -147,7 +292,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         } else {
            next.push(eqId);
         }
-        if (faction.id === 'rus' && eqId === 'prot_shield' && next.includes('prot_shield')) {
+        if (effectiveFaction.id === 'rus' && eqId === 'prot_shield' && next.includes('prot_shield')) {
            const baseCount = next.filter(id => id === 'mel_base').length;
            if (baseCount > 1) {
               next = next.filter(id => id !== 'mel_base');
@@ -156,19 +301,25 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         }
       }
       else if (type === 'special') {
-        if (next.includes(eqId)) next = next.filter(id => id !== eqId);
-        else next.push(eqId);
-      } 
+        if (next.includes(eqId)) {
+          next = next.filter(id => id !== eqId);
+        } else {
+          // Banner XOR Horn on the same unit: drop the other one when adding either.
+          if (eqId === 'spec_banner') next = next.filter(id => id !== 'spec_horn');
+          if (eqId === 'spec_horn') next = next.filter(id => id !== 'spec_banner');
+          next.push(eqId);
+        }
+      }
       else if (type === 'talent') {
          if (next.includes(eqId)) {
            next = next.filter(id => id !== eqId);
          } else {
-           const currentTalents = next.filter(id => faction.availableEquipment.find(e => e.id === id)?.type === 'talent').length;
+           const currentTalents = next.filter(id => effectiveFaction.availableEquipment.find(e => e.id === id)?.type === 'talent').length;
            if (currentTalents < 2) next.push(eqId);
          }
       }
       else if (type === 'melee') {
-        const isMagyarNoble = faction.id === 'magyars' && (selectedUnitId === 'warlord' || selectedUnitId === 'huscarl');
+        const isMagyarNoble = effectiveFaction.id === 'magyars' && (selectedUnitId === 'warlord' || selectedUnitId === 'huscarl');
 
         if (next.includes(eqId)) {
            // Toggling OFF
@@ -180,15 +331,15 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
            const isHuscarl = selectedUnitId === 'huscarl';
            
            // Magyars: Can combine Spear and Sabre
-           if (faction.id === 'magyars' && (eqId === 'weapon_spear' || eqId === 'weapon_sabre')) {
-               const meleeIds = faction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
+           if (effectiveFaction.id === 'magyars' && (eqId === 'weapon_spear' || eqId === 'weapon_sabre')) {
+               const meleeIds = effectiveFaction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
                const otherComboId = eqId === 'weapon_spear' ? 'weapon_sabre' : 'weapon_spear';
                // Keep the other combo item if present, remove all other melee
                next = next.filter(id => !meleeIds.includes(id) || id === otherComboId);
            }
            // If selecting Danish Axe
            if (eqId === 'mel_axe') {
-               const meleeIds = faction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
+               const meleeIds = effectiveFaction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
                if (isHuscarl) {
                    // Huscarl: Keep Base, remove others (Spear, Improvised)
                    next = next.filter(id => !meleeIds.includes(id) || id === 'mel_base');
@@ -199,14 +350,14 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
            }
            // If selecting Lance
            else if (eqId === 'mel_spear') {
-               const meleeIds = faction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
+               const meleeIds = effectiveFaction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
                // Keep Base. Remove Axe (unless Huscarl logic allows, but rule says Lance+Base, not Lance+Axe), Improvised.
                // Assuming Lance cannot combine with Axe.
                next = next.filter(id => !meleeIds.includes(id) || id === 'mel_base');
            }
            // If selecting Base Weapon
            else if (eqId === 'mel_base') {
-               const meleeIds = faction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
+               const meleeIds = effectiveFaction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
                // Keep Spear. Keep Axe ONLY if Huscarl.
                next = next.filter(id => {
                    if (!meleeIds.includes(id)) return true;
@@ -217,7 +368,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
            }
            else {
                // Other (Improvised): Exclusive
-               const meleeIds = faction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
+               const meleeIds = effectiveFaction.availableEquipment.filter(e => e.type === 'melee').map(e => e.id);
                next = next.filter(id => !meleeIds.includes(id));
            }
            
@@ -227,32 +378,32 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         // Axe vs Ranged logic (Applied after selection)
         if (next.includes('mel_axe')) {
            const activeRanged = next.find(id => {
-              const item = faction.availableEquipment.find(e => e.id === id);
+              const item = effectiveFaction.availableEquipment.find(e => e.id === id);
               return item?.type === 'ranged' && item.id !== 'ran_none';
            });
            if (activeRanged) {
               next = next.filter(id => id !== activeRanged);
-              if (faction.availableEquipment.some(e => e.id === 'ran_none')) {
+              if (effectiveFaction.availableEquipment.some(e => e.id === 'ran_none')) {
                  next.push('ran_none');
               }
            }
         }
       }
       else {
-        const isMagyarNoble = faction.id === 'magyars' && (selectedUnitId === 'warlord' || selectedUnitId === 'huscarl');
+        const isMagyarNoble = effectiveFaction.id === 'magyars' && (selectedUnitId === 'warlord' || selectedUnitId === 'huscarl');
 
         if (isMagyarNoble) {
            if (next.includes(eqId)) next = next.filter(id => id !== eqId);
            else next.push(eqId);
         } else {
-           const othersOfType = faction.availableEquipment.filter(e => e.type === type).map(e => e.id);
+           const othersOfType = effectiveFaction.availableEquipment.filter(e => e.type === type).map(e => e.id);
            next = next.filter(id => !othersOfType.includes(id));
            next.push(eqId);
         }
 
         const isRanged = type === 'ranged';
         if (isRanged && eqId !== 'ran_none') {
-          if (faction.id === 'rus') {
+          if (effectiveFaction.id === 'rus') {
              const baseCount = next.filter(id => id === 'mel_base').length;
              if (baseCount > 1) {
                  const idx = next.lastIndexOf('mel_base');
@@ -262,15 +413,17 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
 
           if (next.includes('mel_axe')) {
             next = next.filter(id => id !== 'mel_axe');
-            const freeMelee = faction.availableEquipment.find(e => 
+            const freeMelee = effectiveFaction.availableEquipment.find(e =>
                e.type === 'melee' && e.costs[selectedUnitId as UnitRole] === 0
             );
             if (freeMelee) next.push(freeMelee.id);
-            else if (faction.availableEquipment.some(e => e.id === 'mel_base')) next.push('mel_base');
+            else if (effectiveFaction.availableEquipment.some(e => e.id === 'mel_base')) next.push('mel_base');
           }
         }
       }
-      return next;
+      // Resolve cross-rule conflicts based on the user's most recent action.
+      const lastAddedId = next.includes(eqId) ? eqId : null;
+      return resolveEquipmentConflicts(next, lastAddedId, effectiveFaction);
     });
   };
 
@@ -280,12 +433,12 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
          let next = prev.filter(id => id !== 'prot_shield');
          
          // Remove ranged weapons (except ran_none)
-         const rangedIds = faction.availableEquipment
+         const rangedIds = effectiveFaction.availableEquipment
              .filter(e => e.type === 'ranged' && e.id !== 'ran_none')
              .map(e => e.id);
          next = next.filter(id => !rangedIds.includes(id));
          
-         if (faction.availableEquipment.some(e => e.id === 'ran_none')) {
+         if (effectiveFaction.availableEquipment.some(e => e.id === 'ran_none')) {
              if (!next.includes('ran_none')) next.push('ran_none');
          }
 
@@ -306,7 +459,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
     if (!selectedUnit) return 0;
     let cost = selectedUnit.baseCost;
     selectedEquipment.forEach(id => {
-      const eq = faction.availableEquipment.find(e => e.id === id);
+      const eq = effectiveFaction.availableEquipment.find(e => e.id === id);
       if (eq) {
         const eqCost = eq.costs[selectedUnit.id as UnitRole];
         if (eqCost !== null) cost += eqCost;
@@ -322,13 +475,26 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
 
   const handleSave = () => {
     if (selectedUnitId) {
-      onAddUnit(selectedUnitId, selectedEquipment, quantity);
+      onAddUnit(selectedUnitId, selectedEquipment, quantity, mercFactionId ?? undefined);
       setIsOpen(false);
     }
   };
 
   const handleUnitToggle = (unitId: string) => {
-    setSelectedUnitId(prev => prev === unitId ? "" : unitId);
+    setSelectedUnitId((prev) => (prev === unitId ? "" : unitId));
+    // Clicking a native unit resets the mercenary mode.
+    setMercFactionId(null);
+  };
+
+  const handleMercToggle = (sourceFactionId: string, unitId: string) => {
+    const isCurrent = selectedUnitId === unitId && mercFactionId === sourceFactionId;
+    if (isCurrent) {
+      setSelectedUnitId("");
+      setMercFactionId(null);
+    } else {
+      setMercFactionId(sourceFactionId);
+      setSelectedUnitId(unitId);
+    }
   };
 
   return (
@@ -386,7 +552,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {faction.units.map((unit) => {
                     const Icon = unit.icon;
-                    const isSelected = selectedUnitId === unit.id;
+                    const isSelected = selectedUnitId === unit.id && !mercFactionId;
                     const unitName = tData('roles', unit.id, unit.name);
                     return (
                         <button
@@ -416,6 +582,52 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                 </div>
                 </div>
 
+                {mercenaries.length > 0 && (
+                  <div className="space-y-4">
+                    <Label className="text-xs font-bold uppercase tracking-[0.15em] text-stone-500 pl-1">
+                      Mercenaires
+                    </Label>
+                    <p className="text-xs text-stone-500 pl-1 -mt-2">
+                      Jusqu'à 50% de votre armée peut être composée d'unités d'autres factions. Le Chef doit rester Byzantin.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {mercenaries.map(({ sourceFaction, unit }) => {
+                        const Icon = unit.icon;
+                        const isSelected = selectedUnitId === unit.id && mercFactionId === sourceFaction.id;
+                        const unitName = tData("roles", unit.id, unit.name);
+                        const factionName = tData("factions", sourceFaction.id, sourceFaction.name);
+                        return (
+                          <button
+                            key={`${sourceFaction.id}_${unit.id}`}
+                            type="button"
+                            onClick={() => handleMercToggle(sourceFaction.id, unit.id)}
+                            className={`
+                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-all duration-300 focus:outline-none
+                              ${isSelected
+                                ? "border-amber-500/60 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.18)] scale-[1.02]"
+                                : "border-white/5 hover:border-amber-500/30 bg-[#1c1917]/60 hover:bg-[#2c2525]/60"}
+                            `}
+                          >
+                            <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border ${isSelected ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-black/30 border-white/10 text-stone-500 group-hover:text-stone-300"}`}>
+                              {factionName}
+                            </span>
+                            <div className={`p-3 rounded-none transition-all duration-500 ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
+                              <Icon className={`w-7 h-7 transition-colors duration-300 ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
+                            </div>
+                            <span className={`font-serif font-bold text-sm uppercase tracking-wider text-center transition-colors ${isSelected ? "text-amber-300" : "text-stone-400 group-hover:text-stone-200"}`}>
+                              {unitName}
+                            </span>
+                            <div className={`mt-auto text-xs font-bold px-2 py-0.5 rounded-none ${isSelected ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "text-stone-600 bg-black/20"}`}>
+                              {unit.baseCost} PTS
+                            </div>
+                            {isSelected && <div className="absolute inset-0 rounded-none border-2 border-amber-500/30 pointer-events-none" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {selectedUnit && (
                 <div ref={optionsRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -431,9 +643,9 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         </Label>
                         </div>
 
-                        {type === 'protection' || type === 'melee' || (type === 'ranged' && faction.id === 'magyars' && (selectedUnit.id === 'warlord' || selectedUnit.id === 'huscarl')) ? (
+                        {type === 'protection' || type === 'melee' || (type === 'ranged' && effectiveFaction.id === 'magyars' && (selectedUnit.id === 'warlord' || selectedUnit.id === 'huscarl')) ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {faction.availableEquipment
+                                {effectiveFaction.availableEquipment
                                 .filter(e => e.type === type)
                                 .map((eq) => {
                                     const cost = eq.costs[selectedUnit.id as UnitRole];
@@ -460,7 +672,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                         </div>
                                         <span className={`text-xs font-bold font-mono ${isChecked ? "text-[#cc6512]" : "text-stone-600"}`}>{cost > 0 ? `+${cost}` : '0'}</span>
                                         
-                                        {faction.id === 'rus' && eq.id === 'mel_base' && isChecked && (
+                                        {effectiveFaction.id === 'rus' && eq.id === 'mel_base' && isChecked && (
                                             <div className="absolute top-full left-0 right-0 pt-2 px-3 pb-2 z-20 bg-[#1c1917] border border-t-0 border-white/10 rounded-none -mt-1 shadow-xl" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
@@ -484,11 +696,11 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             </div>
                         ) : (
                             <RadioGroup 
-                            value={selectedEquipment.find(id => faction.availableEquipment.find(e => e.id === id)?.type === type) || ''}
+                            value={selectedEquipment.find(id => effectiveFaction.availableEquipment.find(e => e.id === id)?.type === type) || ''}
                             onValueChange={(val) => handleEquipmentToggle(val, type)}
                             className="grid grid-cols-1 sm:grid-cols-2 gap-3"
                             >
-                            {faction.availableEquipment
+                            {effectiveFaction.availableEquipment
                                 .filter(e => e.type === type)
                                 .map((eq) => {
                                 const cost = eq.costs[selectedUnit.id as UnitRole];
@@ -530,7 +742,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         <Label className="text-xs font-bold uppercase tracking-[0.15em]">{t('specialOptions')}</Label>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {faction.availableEquipment
+                        {effectiveFaction.availableEquipment
                         .filter(e => e.type === 'special')
                         .map((eq) => {
                             const cost = eq.costs[selectedUnit.id as UnitRole];
@@ -569,14 +781,14 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         <Label className="text-xs font-bold uppercase tracking-[0.15em]">{t('talentsTitle')}</Label>
                         </div>
                         <div className="grid grid-cols-1 gap-3">
-                        {faction.availableEquipment
+                        {effectiveFaction.availableEquipment
                             .filter(e => e.type === 'talent')
                             .map((eq) => {
                             const cost = eq.costs[selectedUnit.id as UnitRole];
                             if (cost === null) return null;
                             
                             const isSelected = selectedEquipment.includes(eq.id);
-                            const currentTalentCount = selectedEquipment.filter(id => faction.availableEquipment.find(e => e.id === id)?.type === 'talent').length;
+                            const currentTalentCount = selectedEquipment.filter(id => effectiveFaction.availableEquipment.find(e => e.id === id)?.type === 'talent').length;
                             const disabled = !isSelected && currentTalentCount >= 2;
                             const talentName = tData('equipment', eq.id, eq.name);
                             const talentDesc = tData('equipment', `${eq.id}_desc`, eq.description || '');

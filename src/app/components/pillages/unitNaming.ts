@@ -1,6 +1,25 @@
 import React from "react";
 import { ArmyUnit, Faction } from "../../data/gameData";
-import { Sword, Crown } from "lucide-react";
+import {
+  Sword,
+  Crown,
+  Shield,
+  ShieldHalf,
+  Axe,
+  Flag,
+  Megaphone,
+  PawPrint,
+  Skull,
+  Heart,
+  Crosshair,
+  Hammer,
+  Flame,
+  Mountain,
+  Users,
+  Wind,
+  TreeDeciduous,
+  type LucideIcon,
+} from "lucide-react";
 
 // Custom horseshoe icon (horse / cavalry). Inline SVG keeps the same stroke style as Lucide.
 export const HorseIcon = ({ className = "", ...props }: React.SVGProps<SVGSVGElement>) =>
@@ -115,6 +134,37 @@ export function getUnitDisplayName(
 }
 
 /**
+ * Curated registry of icons available to the user when overriding a unit's
+ * icon manually. Keys are stable IDs persisted in ArmyUnit.customIconId.
+ */
+export const ICON_REGISTRY: Record<string, { component: any; label: string }> = {
+  sword: { component: Sword, label: "Épée" },
+  crown: { component: Crown, label: "Couronne" },
+  bow: { component: BowIcon, label: "Arc" },
+  horse: { component: HorseIcon, label: "Cheval" },
+  shield: { component: Shield, label: "Bouclier" },
+  shield_half: { component: ShieldHalf, label: "Demi-bouclier" },
+  axe: { component: Axe, label: "Hache" },
+  flag: { component: Flag, label: "Bannière" },
+  horn: { component: Megaphone, label: "Cor" },
+  paw: { component: PawPrint, label: "Patte" },
+  skull: { component: Skull, label: "Crâne" },
+  heart: { component: Heart, label: "Cœur" },
+  crosshair: { component: Crosshair, label: "Cible" },
+  hammer: { component: Hammer, label: "Marteau" },
+  flame: { component: Flame, label: "Flamme" },
+  mountain: { component: Mountain, label: "Montagne" },
+  users: { component: Users, label: "Troupe" },
+  wind: { component: Wind, label: "Vent" },
+  tree: { component: TreeDeciduous, label: "Arbre" },
+};
+
+export function getIconById(id: string | undefined) {
+  if (!id) return null;
+  return ICON_REGISTRY[id]?.component ?? null;
+}
+
+/**
  * Returns the icon component to display for a unit, taking into account its
  * role and equipment.
  * - warlord → Crown
@@ -124,6 +174,11 @@ export function getUnitDisplayName(
  * - other roles → fall back to the unit type's default icon
  */
 export function getUnitDisplayIcon(unit: ArmyUnit, faction: Faction) {
+  // 1. User-chosen custom icon wins if set.
+  const custom = getIconById(unit.customIconId);
+  if (custom) return custom;
+
+  // 2. Otherwise derive from role / equipment.
   if (unit.unitTypeId === "warlord") return Crown;
 
   if (unit.unitTypeId === "warrior") {

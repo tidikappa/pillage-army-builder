@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { factions, ArmyUnit, Faction, UnitRole } from "../../data/gameData";
+import { factions, ArmyUnit, Faction, UnitRole, getEffectiveFaction } from "../../data/gameData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -56,23 +56,32 @@ export function ArmyBuilder() {
 
   const selectedFaction = factions.find(f => f.id === selectedFactionId);
 
+  const computeUnitCost = (unit: ArmyUnit): number => {
+    if (!selectedFaction) return 0;
+    const effective = getEffectiveFaction(unit, selectedFaction);
+    const unitType = effective.units.find((u) => u.id === unit.unitTypeId);
+    if (!unitType) return 0;
+    let cost = unitType.baseCost;
+    unit.equipment.forEach((eqId) => {
+      const eq = effective.availableEquipment.find((e) => e.id === eqId);
+      if (eq) {
+        const eqCost = eq.costs[unit.unitTypeId as UnitRole];
+        if (eqCost !== null && eqCost !== undefined) cost += eqCost as number;
+      }
+    });
+    return cost;
+  };
+
   const calculateTotalPoints = () => {
     if (!selectedFaction) return 0;
+    return army.reduce((total, unit) => total + computeUnitCost(unit) * (unit.quantity || 1), 0);
+  };
+
+  const calculateMercenaryPoints = () => {
+    if (!selectedFaction) return 0;
     return army.reduce((total, unit) => {
-      const unitType = selectedFaction.units.find(u => u.id === unit.unitTypeId);
-      if (!unitType) return total;
-      
-      let unitCost = unitType.baseCost;
-      unit.equipment.forEach(eqId => {
-        const eq = selectedFaction.availableEquipment.find(e => e.id === eqId);
-        if (eq) {
-           const eqCost = eq.costs[unit.unitTypeId as UnitRole];
-           if (eqCost !== null) {
-             unitCost += eqCost;
-           }
-        }
-      });
-      return total + (unitCost * (unit.quantity || 1));
+      if (!unit.sourceFactionId || unit.sourceFactionId === selectedFaction.id) return total;
+      return total + computeUnitCost(unit) * (unit.quantity || 1);
     }, 0);
   };
 
@@ -92,15 +101,22 @@ export function ArmyBuilder() {
     
     const usedTalents = new Set<string>();
 
+    let mercenaryWarlord = false;
     army.forEach(unit => {
         const qty = unit.quantity || 1;
         totalModels += qty;
 
-        if (unit.unitTypeId === 'warlord') warlordCount += qty;
+        if (unit.unitTypeId === 'warlord') {
+          warlordCount += qty;
+          if (unit.sourceFactionId && unit.sourceFactionId !== selectedFactionId) {
+            mercenaryWarlord = true;
+          }
+        }
         if (unit.unitTypeId === 'warrior') warriorCount += qty;
 
-        const unitEquipmentDetails = unit.equipment.map(id => 
-            selectedFaction?.availableEquipment.find(e => e.id === id)
+        const effective = getEffectiveFaction(unit, selectedFaction);
+        const unitEquipmentDetails = unit.equipment.map(id =>
+            effective.availableEquipment.find(e => e.id === id)
         ).filter(Boolean);
 
         let isShooter = false;
@@ -145,6 +161,23 @@ export function ArmyBuilder() {
       if (cavalryCount > maxCavalry) validationErrors.push(t('err_tooManyCavalry').replace('$1', cavalryCount.toString()).replace('$2', maxCavalry.toString()).replace('$3', totalModels.toString()));
     }
 
+    // Byzantine mercenary rules
+    if (selectedFactionId === 'byzantines') {
+      if (mercenaryWarlord) {
+        validationErrors.push(t('err_byzantineWarlord'));
+      }
+      const total = calculateTotalPoints();
+      const mercPoints = calculateMercenaryPoints();
+      if (total > 0 && mercPoints > total / 2) {
+        validationErrors.push(
+          t('err_mercenaryQuota')
+            .replace('$1', mercPoints.toString())
+            .replace('$2', total.toString())
+            .replace('$3', Math.floor(total / 2).toString())
+        );
+      }
+    }
+
     return validationErrors;
   };
 
@@ -154,7 +187,7 @@ export function ArmyBuilder() {
   
   const validationErrors = getValidationErrors();
 
-  const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number) => {
+  const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string) => {
     const newTalents = equipmentIds.filter(id => 
       selectedFaction?.availableEquipment.find(e => e.id === id)?.type === 'talent'
     );
@@ -185,7 +218,8 @@ export function ArmyBuilder() {
       instanceId: Math.random().toString(36).substring(7),
       unitTypeId: unitTypeId as UnitRole,
       equipment: equipmentIds,
-      quantity: quantity
+      quantity: quantity,
+      sourceFactionId: sourceFactionId && sourceFactionId !== selectedFactionId ? sourceFactionId : undefined,
     };
     setArmy([...army, newUnit]);
     toast.success(quantity > 1 ? t("unitsAdded") : t("unitAdded"));
@@ -211,7 +245,7 @@ export function ArmyBuilder() {
     setArmy(army.map(u => u.instanceId === instanceId ? { ...u, quantity: newQuantity } : u));
   };
 
-  const handleUpdateUnit = (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number) => {
+  const handleUpdateUnit = (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string) => {
     const unitToUpdate = army.find(u => u.instanceId === instanceId);
     if (!unitToUpdate) return;
 
@@ -249,13 +283,18 @@ export function ArmyBuilder() {
       ...u,
       unitTypeId: unitTypeId as UnitRole,
       equipment: equipmentIds,
-      quantity: quantity
+      quantity: quantity,
+      sourceFactionId: sourceFactionId && sourceFactionId !== selectedFactionId ? sourceFactionId : undefined,
     } : u));
     toast.success(t("unitUpdated"));
   };
 
   const handleUpdateCustomName = (instanceId: string, customName: string) => {
     setArmy(army.map(u => u.instanceId === instanceId ? { ...u, customName: customName || undefined } : u));
+  };
+
+  const handleUpdateCustomIcon = (instanceId: string, customIconId: string | undefined) => {
+    setArmy(army.map(u => u.instanceId === instanceId ? { ...u, customIconId } : u));
   };
 
   const handleReset = () => {
@@ -723,6 +762,8 @@ export function ArmyBuilder() {
                       onUpdateQuantity={handleUpdateQuantity}
                       onUpdateUnit={handleUpdateUnit}
                       onUpdateCustomName={handleUpdateCustomName}
+                      onUpdateCustomIcon={handleUpdateCustomIcon}
+                      dogHandlerActive={army.some(u => u.equipment.includes('talent_dog_handler'))}
                       />
                   ))}
                 </div>

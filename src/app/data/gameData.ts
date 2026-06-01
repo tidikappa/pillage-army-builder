@@ -472,6 +472,7 @@ const byzantineEquipment: Equipment[] = [
   { id: 'weapon_spear', name: 'Lance', type: 'melee', icon: Sword, costs: c('5 po', '5 po', '-', '5 po', '-', '-') },
   { id: 'weapon_base', name: 'Arme de base', type: 'melee', icon: Sword, costs: c('10 po', '10 po', '-', '10 po', '-', '-') },
   { id: 'weapon_pike', name: 'Pique', type: 'melee', icon: Sword, costs: c('10 po', '10 po', '-', '-', '-', '-'), description: "La pique apporte un malus de -1 aux jets de défense de l'adversaire. Permet le soutien en profondeur (voir règles)." },
+  { id: 'ran_none', name: 'Aucune', type: 'ranged', icon: Crosshair, costs: c('Gratuit', 'Gratuit', '-', '-', '-', '-') },
   { id: 'ranged_sling', name: 'Fronde', type: 'ranged', icon: Crosshair, costs: c('5 po', '5 po', '-', '-', '-', '-') },
   { id: 'ranged_composite_bow', name: 'Arc composite', type: 'ranged', icon: Crosshair, costs: c('25 po', '25 po', '-', '-', '-', '-') },
   { id: 'spec_horse', name: 'Cheval', type: 'special', icon: PawPrint, costs: c('25 po', '25 po', '-', '35 po', '-', '-'), description: "Le cheval du Kataphraktoi est considéré comme PC au lieu de SP." },
@@ -635,4 +636,26 @@ export interface ArmyUnit {
   equipment: string[]; // Array of equipment IDs
   quantity: number;
   customName?: string;
+  /**
+   * For mercenary recruitment (Byzantine rule). When set, this unit comes
+   * from another faction; its baseCost / equipment / specialization are
+   * resolved against that faction instead of the army's main faction.
+   */
+  sourceFactionId?: string;
+  /**
+   * Overrides the auto-derived icon. Value matches a key in ICON_REGISTRY
+   * (see unitNaming.ts). When undefined, the icon is derived from the role
+   * and equipment.
+   */
+  customIconId?: string;
+}
+
+/**
+ * Returns the faction that owns this unit's stats and equipment.
+ * For regular units, it's the army's main faction. For mercenary units
+ * (sourceFactionId set), it's the source faction.
+ */
+export function getEffectiveFaction(unit: ArmyUnit, mainFaction: Faction): Faction {
+  if (!unit.sourceFactionId || unit.sourceFactionId === mainFaction.id) return mainFaction;
+  return factions.find((f) => f.id === unit.sourceFactionId) ?? mainFaction;
 }

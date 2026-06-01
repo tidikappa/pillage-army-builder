@@ -3,33 +3,45 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X } from "lucide-react";
-import { ArmyUnit, Faction, Equipment, UnitRole } from "../../data/gameData";
+import { ArmyUnit, Faction, Equipment, UnitRole, getEffectiveFaction } from "../../data/gameData";
 import { useTranslation } from "./TranslationContext";
 import { UnitForm } from "./UnitForm";
-import { getUnitDisplayName, getUnitDisplayIcon } from "./unitNaming";
+import { getUnitDisplayName, getUnitDisplayIcon, ICON_REGISTRY } from "./unitNaming";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { RotateCw } from "lucide-react";
 
 interface UnitCardProps {
   unit: ArmyUnit;
   faction: Faction;
   onRemove: (instanceId: string) => void;
   onUpdateQuantity?: (instanceId: string, newQuantity: number) => void;
-  onUpdateUnit?: (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number) => void;
+  onUpdateUnit?: (
+    instanceId: string,
+    unitTypeId: string,
+    equipmentIds: string[],
+    quantity: number,
+    sourceFactionId?: string
+  ) => void;
   onUpdateCustomName?: (instanceId: string, customName: string) => void;
+  onUpdateCustomIcon?: (instanceId: string, customIconId: string | undefined) => void;
+  dogHandlerActive?: boolean;
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName }: UnitCardProps) {
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, dogHandlerActive = false }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const [nameDraft, setNameDraft] = React.useState<string>(unit.customName ?? "");
-  const unitType = faction.units.find(u => u.id === unit.unitTypeId);
+  const effectiveFaction = getEffectiveFaction(unit, faction);
+  const isMercenary = Boolean(unit.sourceFactionId && unit.sourceFactionId !== faction.id);
+  const unitType = effectiveFaction.units.find(u => u.id === unit.unitTypeId);
 
   if (!unitType) return null;
 
   const getEquipment = (ids: string[]) => {
-    return ids.map(id => faction.availableEquipment.find(e => e.id === id)).filter(Boolean) as Equipment[];
+    return ids.map(id => effectiveFaction.availableEquipment.find(e => e.id === id)).filter(Boolean) as Equipment[];
   };
 
   const equipment = getEquipment(unit.equipment);
@@ -67,7 +79,8 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
             {items.map(e => {
                 const cost = e.costs[unitType.id as UnitRole];
                 const eName = tData('equipment', e.id, e.name);
-                return `${eName}${cost ? ` (${cost} po)` : ''}`;
+                const dogSuffix = e.id === 'spec_dogs' ? ` ×${dogHandlerActive ? 4 : 3}` : '';
+                return `${eName}${dogSuffix}${cost ? ` (${cost} po)` : ''}`;
             }).join(", ")}
         </span>
       </div>
@@ -86,11 +99,67 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
           
           {/* Left: Icon & Details */}
           <div className="flex gap-5 flex-1">
-            {/* Icon Box */}
+            {/* Icon Box (clickable when onUpdateCustomIcon is provided) */}
             <div className="relative shrink-0">
+              {onUpdateCustomIcon ? (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Changer l'icône"
+                      title="Changer l'icône"
+                      className={`h-14 w-14 rounded-none bg-black/40 border ${unit.customIconId ? "border-[#cc6512]/60" : "border-white/5"} flex items-center justify-center shadow-inner hover:bg-black/60 hover:border-[#cc6512]/60 transition-colors`}
+                    >
+                      <UnitIcon className="w-7 h-7 text-stone-200" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="bottom"
+                    align="start"
+                    className="w-64 p-3 rounded-none bg-[#1c1917]/95 border border-white/15 backdrop-blur-md text-stone-200 shadow-2xl"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-stone-400">
+                          Icône
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateCustomIcon(unit.instanceId, undefined)}
+                          className="text-[10px] uppercase font-bold tracking-wider text-stone-400 hover:text-[#cc6512] inline-flex items-center gap-1"
+                        >
+                          <RotateCw className="w-3 h-3" /> Auto
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-6 gap-1">
+                        {Object.entries(ICON_REGISTRY).map(([id, { component: Icon, label }]) => {
+                          const isActive = unit.customIconId === id;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              onClick={() => onUpdateCustomIcon(unit.instanceId, id)}
+                              title={label}
+                              aria-label={label}
+                              className={`h-9 w-9 flex items-center justify-center rounded-none border transition-colors ${
+                                isActive
+                                  ? "bg-[#cc6512]/20 border-[#cc6512] text-[#cc6512]"
+                                  : "bg-black/40 border-white/10 text-stone-300 hover:border-[#cc6512]/40 hover:text-[#cc6512]"
+                              }`}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ) : (
                 <div className="h-14 w-14 rounded-none bg-black/40 border border-white/5 flex items-center justify-center shadow-inner">
-                    <UnitIcon className="w-7 h-7 text-stone-200" />
+                  <UnitIcon className="w-7 h-7 text-stone-200" />
                 </div>
+              )}
             </div>
 
             <div className="space-y-3 w-full">
@@ -118,6 +187,11 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                   ) : (
                     <h3 className="font-bold text-lg font-serif tracking-wide text-white flex items-center gap-2 flex-wrap min-w-0">
                       <span className="truncate">{unitName}</span>
+                      {isMercenary && (
+                        <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold font-sans">
+                          Merc · {tData("factions", effectiveFaction.id, effectiveFaction.name)}
+                        </span>
+                      )}
                       {hasCustomName && (
                         <span className="text-[10px] uppercase tracking-widest text-stone-500 font-sans font-medium">
                           ({tData("roles", unitType.id, unitType.name)})
@@ -223,19 +297,20 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
 
     {/* Edit Modal */}
     {onUpdateUnit && (
-      <UnitForm 
+      <UnitForm
         faction={faction}
         isOpen={isEditOpen}
         onOpenChange={setIsEditOpen}
-        onAddUnit={(unitTypeId, equipmentIds, qty) => {
-          onUpdateUnit(unit.instanceId, unitTypeId, equipmentIds, qty);
+        onAddUnit={(unitTypeId, equipmentIds, qty, sourceFactionId) => {
+          onUpdateUnit(unit.instanceId, unitTypeId, equipmentIds, qty, sourceFactionId);
           setIsEditOpen(false);
         }}
         editMode={true}
         unitToEdit={{
           unitTypeId: unit.unitTypeId,
           equipment: unit.equipment,
-          quantity: unit.quantity
+          quantity: unit.quantity,
+          sourceFactionId: unit.sourceFactionId,
         }}
         currentPoints={0}
         maxPoints={999999}
