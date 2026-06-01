@@ -1,0 +1,183 @@
+import React from "react";
+import { Card, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil } from "lucide-react";
+import { ArmyUnit, Faction, Equipment, UnitRole } from "../../data/gameData";
+import { useTranslation } from "./TranslationContext";
+import { UnitForm } from "./UnitForm";
+
+interface UnitCardProps {
+  unit: ArmyUnit;
+  faction: Faction;
+  onRemove: (instanceId: string) => void;
+  onUpdateQuantity?: (instanceId: string, newQuantity: number) => void;
+  onUpdateUnit?: (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number) => void;
+}
+
+import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
+
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit }: UnitCardProps) {
+  const { t, tData } = useTranslation();
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const unitType = faction.units.find(u => u.id === unit.unitTypeId);
+  
+  if (!unitType) return null;
+
+  const getEquipment = (ids: string[]) => {
+    return ids.map(id => faction.availableEquipment.find(e => e.id === id)).filter(Boolean) as Equipment[];
+  };
+
+  const equipment = getEquipment(unit.equipment);
+  
+  const singleUnitCost = unitType.baseCost + equipment.reduce((sum, e) => {
+    const cost = e.costs[unitType.id as UnitRole];
+    return sum + (cost || 0);
+  }, 0);
+
+  const quantity = unit.quantity || 1;
+  const totalCost = singleUnitCost * quantity;
+
+  const UnitIcon = unitType.icon;
+
+  const unitName = tData('roles', unitType.id, unitType.name);
+
+  const renderEquipmentList = (type: string, icon: any) => {
+    const items = equipment.filter(e => e.type === type);
+    if (items.length === 0) return null;
+    const Icon = icon;
+    return (
+      <div className="flex items-center gap-2 text-xs font-medium text-stone-600 py-0.5">
+        <Icon className="w-3.5 h-3.5 shrink-0 text-stone-500" />
+        <span className="tracking-wide uppercase">
+            {items.map(e => {
+                const cost = e.costs[unitType.id as UnitRole];
+                const eName = tData('equipment', e.id, e.name);
+                return `${eName}${cost ? ` (${cost} po)` : ''}`;
+            }).join(", ")}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <>
+    <Card 
+        className="group relative overflow-hidden border-0 bg-transparent rounded-none shadow-lg"
+        style={{ backgroundImage: `url(${containerBg})`, backgroundSize: '100% 100%' }}
+    >
+      
+      <CardContent className="p-8 pl-10">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-5">
+          
+          {/* Left: Icon & Details */}
+          <div className="flex gap-5 flex-1">
+            {/* Icon Box */}
+            <div className="relative shrink-0">
+                <div className="h-14 w-14 rounded-none bg-black/40 border border-white/5 flex items-center justify-center shadow-inner">
+                    <UnitIcon className="w-7 h-7 text-stone-200" />
+                </div>
+            </div>
+
+            <div className="space-y-3 w-full">
+              <div className="flex items-baseline justify-between w-full">
+                  <h3 className="font-bold text-lg font-serif tracking-wide text-white flex items-center gap-2">
+                    {unitName}
+                    {quantity > 1 && <span className="text-xs text-[#cc6512] font-sans font-bold bg-[#cc6512]/10 px-1.5 py-0.5 rounded-none border border-[#cc6512]/20">x{quantity}</span>}
+                  </h3>
+                  {/* Mobile Price Badge */}
+                  <Badge variant="outline" className="sm:hidden text-sm font-bold px-2 py-0.5 border-[#cc6512]/20 text-[#cc6512] bg-[#cc6512]/5">
+                      {totalCost} PO
+                  </Badge>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 border-l border-white/5 pl-3">
+                {renderEquipmentList('protection', Shield)}
+                {renderEquipmentList('melee', Sword)}
+                {renderEquipmentList('ranged', Crosshair)}
+                {renderEquipmentList('special', Zap)}
+                {renderEquipmentList('talent', Sparkles)}
+              </div>
+            </div>
+          </div>
+          
+          {/* Right: Controls & Price */}
+          <div className="flex flex-row sm:flex-col items-center sm:items-end gap-4 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0 mt-2 sm:mt-0">
+            <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">{t('totalCost')}</span>
+                <span className="text-xl font-bold font-['UnifrakturCook'] text-[#cc6512]">
+                {totalCost} PO
+                </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+                {/* Quantity Controls */}
+                <div className="flex items-center bg-black/20 rounded-none border border-white/10 p-1">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-none text-stone-400 hover:text-white hover:bg-white/5 transition-all"
+                    disabled={quantity <= 1}
+                    onClick={() => onUpdateQuantity?.(unit.instanceId, quantity - 1)}
+                >
+                    <Minus className="w-3 h-3" />
+                </Button>
+                <span className="w-8 text-center text-sm font-bold text-stone-200 font-mono">{quantity}</span>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-none text-stone-400 hover:text-white hover:bg-white/5 transition-all"
+                    onClick={() => onUpdateQuantity?.(unit.instanceId, quantity + 1)}
+                >
+                    <Plus className="w-3 h-3" />
+                </Button>
+                </div>
+
+                <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-stone-500 hover:text-red-400 hover:bg-red-950/20 transition-colors rounded-none h-9 w-9"
+                onClick={() => onRemove(unit.instanceId)}
+                aria-label={t('remove')}
+                >
+                <Trash2 className="w-4 h-4" />
+                </Button>
+
+                <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-stone-500 hover:text-blue-400 hover:bg-blue-950/20 transition-colors rounded-none h-9 w-9"
+                onClick={() => setIsEditOpen(true)}
+                aria-label={t('edit')}
+                >
+                <Pencil className="w-4 h-4" />
+                </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Edit Modal */}
+    {onUpdateUnit && (
+      <UnitForm 
+        faction={faction}
+        isOpen={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onAddUnit={(unitTypeId, equipmentIds, qty) => {
+          onUpdateUnit(unit.instanceId, unitTypeId, equipmentIds, qty);
+          setIsEditOpen(false);
+        }}
+        editMode={true}
+        unitToEdit={{
+          unitTypeId: unit.unitTypeId,
+          equipment: unit.equipment,
+          quantity: unit.quantity
+        }}
+        currentPoints={0}
+        maxPoints={999999}
+      />
+    )}
+    </>
+  );
+}
