@@ -5,12 +5,15 @@ import { GalleryPage } from "./components/pages/GalleryPage";
 import { MyListsPage } from "./components/pages/MyListsPage";
 import { LoginPage } from "./components/pages/LoginPage";
 import { SignupPage } from "./components/pages/SignupPage";
+import { ForgotPasswordPage } from "./components/pages/ForgotPasswordPage";
+import { UpdatePasswordPage } from "./components/pages/UpdatePasswordPage";
+import { AdminUsersPage } from "./components/pages/AdminUsersPage";
 import { Toaster } from "./components/ui/sonner";
 import { TranslationProvider, useTranslation } from "./components/pillages/TranslationContext";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
-import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords } from "lucide-react";
+import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords, ShieldAlert } from "lucide-react";
 
 function LanguageSelector() {
   const { language, setLanguage } = useTranslation();
@@ -30,7 +33,7 @@ function LanguageSelector() {
 }
 
 function NavItems({ onItemClick }: { onItemClick?: () => void }) {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, isAdmin } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -61,6 +64,13 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
         <NavLink to="/my-lists" className={linkClass} onClick={onItemClick}>
           <span className="inline-flex items-center gap-1">
             <User className="w-3.5 h-3.5" /> {t("navMyLists")}
+          </span>
+        </NavLink>
+      )}
+      {isAdmin && (
+        <NavLink to="/admin/users" className={linkClass} onClick={onItemClick}>
+          <span className="inline-flex items-center gap-1 text-red-400">
+            <ShieldAlert className="w-3.5 h-3.5" /> Admin
           </span>
         </NavLink>
       )}
@@ -191,6 +201,9 @@ export default function App() {
               <Route path="/my-lists" element={<MyListsPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/update-password" element={<UpdatePasswordPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
             </Routes>
           </Layout>
         </AuthProvider>

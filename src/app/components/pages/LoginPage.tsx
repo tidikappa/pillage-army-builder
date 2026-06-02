@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../lib/AuthContext";
+import { useTranslation } from "../pillages/TranslationContext";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -8,6 +9,7 @@ import { toast } from "sonner";
 
 export function LoginPage() {
   const { signIn, user } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = React.useState("");
@@ -76,6 +78,14 @@ export function LoginPage() {
             >
               {submitting ? "..." : "Se connecter"}
             </Button>
+            <p className="text-center pt-1">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-stone-300 hover:text-[#cc6512] underline-offset-4 hover:underline"
+              >
+                {t("forgotPassword")}
+              </Link>
+            </p>
           </form>
           <p className="text-base text-stone-200 mt-8 text-center">
             Pas de compte ?{" "}
