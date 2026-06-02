@@ -864,22 +864,16 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                     </div>
                     
                     <div className="flex gap-3">
-                        <Button 
-                        onClick={handleSave} 
-                        disabled={!canAfford}
-                        className={`
-                            rounded-none px-8 font-bold tracking-wider shadow-lg transition-all
-                            ${canAfford 
-                                ? "bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-105" 
-                                : "bg-stone-800 text-stone-500 cursor-not-allowed"}
-                        `}
+                        <Button
+                        onClick={handleSave}
+                        className="rounded-none px-8 font-bold tracking-wider shadow-lg transition-all bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-105"
                         >
                         {t('recruit')}
                         </Button>
                     </div>
                 </div>
                 {!canAfford && (
-                    <p className="text-center text-xs text-red-500 font-bold uppercase tracking-widest animate-pulse">
+                    <p className="text-center text-xs text-red-500 font-bold uppercase tracking-widest">
                         {t('insufficientBudget')}
                     </p>
                 )}

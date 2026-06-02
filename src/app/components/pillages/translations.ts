@@ -109,6 +109,20 @@ export const translations: Record<Language, any> = {
       passwordsDoNotMatch: "Les mots de passe ne correspondent pas",
       passwordUpdated: "Mot de passe mis à jour. Reconnecte-toi.",
       updatePasswordCta: "Mettre à jour",
+
+      // Moral threshold + figurines
+      totalModelsLabel: "Figurines",
+      moralThresholdLabel: "Seuil de moral",
+      figurinesUnit: "fig.",
+
+      // PDF export
+      pdfUnit: "Unité",
+      pdfEquipment: "Équipement / Talents",
+      pdfCost: "Coût",
+      pdfSpecialLabel: "Spécial",
+      pdfTalentsLabel: "Talents",
+      pdfArmySummary: "Composition",
+      pdfMoralSummary: "Seuil de moral",
       err_tooManyShooters: "Trop de tireurs à pied ($1). Limite: $2 (25% de $3 figurines).",
       err_tooManyCavalry: "Trop de cavaliers ($1). Limite: $2 (25% de $3 figurines).",
       err_recruitUniqueTalent: "Impossible de recruter plusieurs unités avec des talents uniques simultanément.",
@@ -225,6 +239,20 @@ export const translations: Record<Language, any> = {
       passwordsDoNotMatch: "Passwords do not match",
       passwordUpdated: "Password updated. Please log in again.",
       updatePasswordCta: "Update",
+
+      // Moral threshold + figurines
+      totalModelsLabel: "Models",
+      moralThresholdLabel: "Morale threshold",
+      figurinesUnit: "models",
+
+      // PDF export
+      pdfUnit: "Unit",
+      pdfEquipment: "Equipment / Talents",
+      pdfCost: "Cost",
+      pdfSpecialLabel: "Special",
+      pdfTalentsLabel: "Talents",
+      pdfArmySummary: "Composition",
+      pdfMoralSummary: "Morale threshold",
       err_tooManyShooters: "Too many foot shooters ($1). Limit: $2 (25% of $3 models).",
       err_tooManyCavalry: "Too many cavalry ($1). Limit: $2 (25% of $3 models).",
       err_recruitUniqueTalent: "Cannot recruit multiple units with unique talents simultaneously.",

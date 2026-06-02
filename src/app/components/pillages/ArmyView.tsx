@@ -1,9 +1,10 @@
 import React from "react";
 import { factions, ArmyUnit, UnitRole, Equipment, getEffectiveFaction } from "../../data/gameData";
 import { Card, CardContent } from "../ui/card";
-import { Shield, Sword, Crosshair, Zap, Sparkles } from "lucide-react";
+import { Shield, Sword, Crosshair, Zap, Sparkles, ShieldAlert } from "lucide-react";
 import { useTranslation } from "./TranslationContext";
 import { getUnitDisplayName, getUnitDisplayIcon } from "./unitNaming";
+import { validateArmy } from "./validation";
 
 interface ArmyViewProps {
   factionId: string;
@@ -33,15 +34,46 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
     return sum + cost * (unit.quantity || 1);
   }, 0);
 
+  const totalModels = units.reduce((sum, u) => sum + (u.quantity || 1), 0);
+  const moralThreshold = Math.ceil(totalModels / 2);
+  const validationErrors = validateArmy(units, faction, t);
+
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between border-b border-white/10 pb-3">
+      {validationErrors.length > 0 && (
+        <div className="bg-red-950/40 border border-red-700/50 px-4 py-3 flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="text-sm text-red-100 space-y-1">
+            <div className="font-bold uppercase tracking-widest text-red-300 text-xs">
+              {t("restrictionsViolated")}
+            </div>
+            <ul className="list-disc pl-4 space-y-0.5">
+              {validationErrors.map((err, i) => (
+                <li key={i}>{err}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-white/10 pb-3">
         <div className="font-serif text-stone-200 uppercase tracking-wider">
           {tData("factions", faction.id, faction.name)}
         </div>
-        <div className="text-sm text-stone-400">
-          <span className={total > budget ? "text-red-400" : "text-[#cc6512]"}>{total}</span> /{" "}
-          {budget} po
+        <div className="flex items-center gap-4 text-sm text-stone-300 flex-wrap">
+          <span>
+            <span className={total > budget ? "text-red-400" : "text-[#cc6512]"}>{total}</span> /{" "}
+            {budget} po
+          </span>
+          <span className="text-stone-500" aria-hidden>·</span>
+          <span>
+            <span className="text-stone-100 font-bold">{totalModels}</span>{" "}
+            <span className="text-stone-400">{t("figurinesUnit")}</span>
+          </span>
+          <span className="text-stone-500" aria-hidden>·</span>
+          <span title={t("moralThresholdLabel")}>
+            <span className="text-xs uppercase tracking-widest text-stone-400">{t("moralThresholdLabel")} :</span>{" "}
+            <span className="text-stone-100 font-bold">{moralThreshold}</span>
+          </span>
         </div>
       </div>
 

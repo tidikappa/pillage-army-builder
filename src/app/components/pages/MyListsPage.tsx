@@ -17,7 +17,9 @@ import {
   Lock,
   Coins,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
+import { validateArmy } from "../pillages/validation";
 
 const ALL = "__all__";
 
@@ -165,9 +167,12 @@ export function MyListsPage() {
         {filtered.map((a) => {
           const faction = factions.find((f) => f.id === a.faction_id);
           const isOpen = expanded.has(a.id);
+          const violationCount = faction
+            ? validateArmy(a.units as ArmyUnit[], faction, t).length
+            : 0;
           return (
             <li key={a.id}>
-              <Card className="bg-black/70 border-white/15 rounded-none text-stone-100 shadow-xl hover:border-[#cc6512]/40 transition-colors">
+              <Card className={`bg-black/70 rounded-none text-stone-100 shadow-xl transition-colors ${violationCount > 0 ? "border border-red-700/50 hover:border-red-500/70" : "border border-white/15 hover:border-[#cc6512]/40"}`}>
                 <CardHeader
                   className="cursor-pointer p-5"
                   onClick={() => toggle(a.id)}
@@ -206,6 +211,12 @@ export function MyListsPage() {
                           {new Date(a.created_at).toLocaleDateString()}
                         </span>
                       </div>
+                      {violationCount > 0 && (
+                        <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-red-950/50 border border-red-700/50 text-red-200 text-[11px] font-bold uppercase tracking-widest">
+                          <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                          {violationCount} {t("restrictionsViolated")}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-3 shrink-0">
                       <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5">

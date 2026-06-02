@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X } from "lucide-react";
+import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
 import { ArmyUnit, Faction, Equipment, UnitRole, getEffectiveFaction } from "../../data/gameData";
 import { useTranslation } from "./TranslationContext";
 import { UnitForm } from "./UnitForm";
@@ -24,12 +24,16 @@ interface UnitCardProps {
   ) => void;
   onUpdateCustomName?: (instanceId: string, customName: string) => void;
   onUpdateCustomIcon?: (instanceId: string, customIconId: string | undefined) => void;
+  onMoveUp?: (instanceId: string) => void;
+  onMoveDown?: (instanceId: string) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   dogHandlerActive?: boolean;
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, dogHandlerActive = false }: UnitCardProps) {
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -97,8 +101,33 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
       <CardContent className="p-8 pl-10">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-5">
           
-          {/* Left: Icon & Details */}
-          <div className="flex gap-5 flex-1">
+          {/* Left: Reorder + Icon + Details */}
+          <div className="flex gap-3 sm:gap-5 flex-1 items-start">
+            {/* Reorder arrows */}
+            {(onMoveUp || onMoveDown) && (
+              <div className="flex flex-col items-center bg-black/20 rounded-none border border-white/10 shrink-0 mt-1">
+                <button
+                  type="button"
+                  onClick={() => onMoveUp?.(unit.instanceId)}
+                  disabled={!canMoveUp}
+                  className="h-6 w-7 flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  aria-label="Monter d'une position"
+                  title="Monter"
+                >
+                  <ChevronUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMoveDown?.(unit.instanceId)}
+                  disabled={!canMoveDown}
+                  className="h-6 w-7 flex items-center justify-center text-stone-400 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed border-t border-white/10"
+                  aria-label="Descendre d'une position"
+                  title="Descendre"
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             {/* Icon Box (clickable when onUpdateCustomIcon is provided) */}
             <div className="relative shrink-0">
               {onUpdateCustomIcon ? (
@@ -270,9 +299,9 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                 </Button>
                 </div>
 
-                <Button 
-                variant="ghost" 
-                size="icon" 
+                <Button
+                variant="ghost"
+                size="icon"
                 className="text-stone-500 hover:text-red-400 hover:bg-red-950/20 transition-colors rounded-none h-9 w-9"
                 onClick={() => onRemove(unit.instanceId)}
                 aria-label={t('remove')}
@@ -280,9 +309,9 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                 <Trash2 className="w-4 h-4" />
                 </Button>
 
-                <Button 
-                variant="ghost" 
-                size="icon" 
+                <Button
+                variant="ghost"
+                size="icon"
                 className="text-stone-500 hover:text-blue-400 hover:bg-blue-950/20 transition-colors rounded-none h-9 w-9"
                 onClick={() => setIsEditOpen(true)}
                 aria-label={t('edit')}

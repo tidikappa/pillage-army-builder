@@ -1,6 +1,9 @@
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { factions, ArmyUnit, Faction, UnitRole, getEffectiveFaction } from "../../data/gameData";
+import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
+import { validateArmy } from "./validation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
@@ -86,104 +89,16 @@ export function ArmyBuilder() {
 
   const getValidationErrors = () => {
     if (!selectedFaction) return [];
-    
-    // Note: Validation messages are complex and kept in French for now to avoid massive refactoring,
-    // as per strategy discussed. Ideally these would be error codes mapped to translated strings.
-    const validationErrors: string[] = [];
-    let totalModels = 0;
-    let warlordCount = 0;
-    let warriorCount = 0;
-    let bannerCount = 0;
-    let hornCount = 0;
-    let shooterCount = 0;
-    let cavalryCount = 0;
-    
-    const usedTalents = new Set<string>();
-
-    let mercenaryWarlord = false;
-    army.forEach(unit => {
-        const qty = unit.quantity || 1;
-        totalModels += qty;
-
-        if (unit.unitTypeId === 'warlord') {
-          warlordCount += qty;
-          if (unit.sourceFactionId && unit.sourceFactionId !== selectedFactionId) {
-            mercenaryWarlord = true;
-          }
-        }
-        if (unit.unitTypeId === 'warrior') warriorCount += qty;
-
-        const effective = getEffectiveFaction(unit, selectedFaction);
-        const unitEquipmentDetails = unit.equipment.map(id =>
-            effective.availableEquipment.find(e => e.id === id)
-        ).filter(Boolean);
-
-        let isShooter = false;
-        let isCavalry = false;
-        let hasBanner = false;
-        let hasHorn = false;
-
-        unitEquipmentDetails.forEach(eq => {
-            if (eq?.type === 'ranged' && eq.id !== 'ran_none') isShooter = true;
-            if (eq?.id === 'spec_horse') isCavalry = true;
-            if (eq?.id === 'spec_banner') hasBanner = true;
-            if (eq?.id === 'spec_horn') hasHorn = true;
-
-            if (eq?.type === 'talent') {
-              if (usedTalents.has(eq.id)) {
-                validationErrors.push(t('err_uniqueTalent').replace('$1', eq.name));
-              }
-              usedTalents.add(eq.id);
-            }
-        });
-
-        if (isCavalry) {
-            cavalryCount += qty;
-        } else {
-            if (isShooter) shooterCount += qty;
-        }
-
-        if (hasBanner) bannerCount += qty;
-        if (hasHorn) hornCount += qty;
-    });
-
-    if (warlordCount === 0) validationErrors.push(t('err_noWarlord'));
-    const allowedWarlords = 1 + Math.floor(warriorCount / 20);
-    if (warlordCount > allowedWarlords) validationErrors.push(t('err_tooManyWarlords').replace('$1', warlordCount.toString()).replace('$2', allowedWarlords.toString()));
-    if (bannerCount > 1) validationErrors.push(t('err_oneBanner'));
-    if (hornCount > 1) validationErrors.push(t('err_oneHorn'));
-    
-    if (selectedFactionId !== 'magyars') {
-      const maxShooters = Math.ceil(totalModels * 0.25);
-      if (shooterCount > maxShooters) validationErrors.push(t('err_tooManyShooters').replace('$1', shooterCount.toString()).replace('$2', maxShooters.toString()).replace('$3', totalModels.toString()));
-      const maxCavalry = Math.ceil(totalModels * 0.25);
-      if (cavalryCount > maxCavalry) validationErrors.push(t('err_tooManyCavalry').replace('$1', cavalryCount.toString()).replace('$2', maxCavalry.toString()).replace('$3', totalModels.toString()));
-    }
-
-    // Byzantine mercenary rules
-    if (selectedFactionId === 'byzantines') {
-      if (mercenaryWarlord) {
-        validationErrors.push(t('err_byzantineWarlord'));
-      }
-      const total = calculateTotalPoints();
-      const mercPoints = calculateMercenaryPoints();
-      if (total > 0 && mercPoints > total / 2) {
-        validationErrors.push(
-          t('err_mercenaryQuota')
-            .replace('$1', mercPoints.toString())
-            .replace('$2', total.toString())
-            .replace('$3', Math.floor(total / 2).toString())
-        );
-      }
-    }
-
-    return validationErrors;
+    return validateArmy(army, selectedFaction, t);
   };
 
   const currentPoints = calculateTotalPoints();
   const remainingPoints = budget - currentPoints;
   const isOverBudget = remainingPoints < 0;
-  
+
+  const totalArmyModels = army.reduce((sum, u) => sum + (u.quantity || 1), 0);
+  const moralThreshold = Math.ceil(totalArmyModels / 2);
+
   const validationErrors = getValidationErrors();
 
   const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string) => {
@@ -296,6 +211,15 @@ export function ArmyBuilder() {
     setArmy(army.map(u => u.instanceId === instanceId ? { ...u, customIconId } : u));
   };
 
+  const handleMoveUnit = (instanceId: string, direction: -1 | 1) => {
+    const idx = army.findIndex(u => u.instanceId === instanceId);
+    const target = idx + direction;
+    if (idx < 0 || target < 0 || target >= army.length) return;
+    const next = [...army];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    setArmy(next);
+  };
+
   const handleReset = () => {
     if (confirm(t("confirmReset"))) {
       setArmy([]);
@@ -365,92 +289,177 @@ export function ArmyBuilder() {
     }
   };
 
-  const handleExportPDF = () => {
+  const svgToPng = (svgString: string, size = 96): Promise<string | null> =>
+    new Promise((resolve) => {
+      try {
+        const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            return resolve(null);
+          }
+          ctx.drawImage(img, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL("image/png"));
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(null);
+        };
+        img.src = url;
+      } catch {
+        resolve(null);
+      }
+    });
+
+  const renderUnitIcon = async (unit: ArmyUnit): Promise<string | null> => {
+    const effective = getEffectiveFaction(unit, selectedFaction!);
+    const Icon = getUnitDisplayIcon(unit, effective);
+    const element = React.createElement(Icon, {
+      width: 48,
+      height: 48,
+      stroke: "#cc6512",
+      strokeWidth: 2,
+      fill: "none",
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    });
+    let svgString = renderToStaticMarkup(element);
+    if (!svgString.includes("xmlns=")) {
+      svgString = svgString.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    // Replace currentColor (used by Lucide + custom icons) with the orange tint
+    svgString = svgString.replace(/currentColor/g, "#cc6512");
+    return svgToPng(svgString, 96);
+  };
+
+  const handleExportPDF = async () => {
     if (!selectedFaction) return;
     const doc = new jsPDF();
-    
+
     let currentY = 20;
     doc.setFontSize(20);
     doc.text(armyName || "Liste d'armée - Pillage", 14, currentY);
-    
+
     currentY += 10;
     doc.setFontSize(12);
-    // Use english name in PDF if selected language is English
-    const factionName = tData('factions', selectedFaction.id, selectedFaction.name);
+    const factionName = tData("factions", selectedFaction.id, selectedFaction.name);
     doc.text(`Faction: ${factionName}`, 14, currentY);
-    
+
     currentY += 6;
-    const pointsText = `Total: ${currentPoints} / ${budget} po`;
+    const pointsText = `${t("spent")}: ${currentPoints} / ${budget} po`;
     doc.text(pointsText, 14, currentY);
-    
+
     if (isOverBudget) {
       doc.setTextColor(200, 0, 0);
-      doc.text("ATTENTION: Budget dépassé", 80, currentY);
+      doc.text(language === "fr" ? "ATTENTION : Budget dépassé" : "WARNING: Over budget", 100, currentY);
       doc.setTextColor(0, 0, 0);
     }
 
+    currentY += 6;
+    doc.text(
+      `${t("totalModelsLabel")}: ${totalArmyModels}   ·   ${t("pdfMoralSummary")}: ${moralThreshold}`,
+      14,
+      currentY
+    );
+
     currentY += 10;
 
-    // Validation Errors
     if (validationErrors.length > 0) {
-        doc.setTextColor(200, 0, 0);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Restrictions Violées:", 14, currentY);
-        currentY += 6;
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        validationErrors.forEach(err => {
-            const splitText = doc.splitTextToSize(`- ${err}`, 180);
-            doc.text(splitText, 14, currentY);
-            currentY += (splitText.length * 5);
-        });
-        doc.setTextColor(0, 0, 0);
-        currentY += 5;
+      doc.setTextColor(200, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(t("restrictionsViolated") + ":", 14, currentY);
+      currentY += 6;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      validationErrors.forEach((err) => {
+        const splitText = doc.splitTextToSize(`- ${err}`, 180);
+        doc.text(splitText, 14, currentY);
+        currentY += splitText.length * 5;
+      });
+      doc.setTextColor(0, 0, 0);
+      currentY += 5;
     }
 
-    const tableData = army.map(unit => {
-        const unitType = selectedFaction.units.find(u => u.id === unit.unitTypeId);
-        if (!unitType) return [];
-        const equipment = unit.equipment.map(id => selectedFaction.availableEquipment.find(e => e.id === id)).filter(Boolean);
-        const formatEquip = (e: any) => {
-            const cost = e.costs[unit.unitTypeId as UnitRole];
-            // Translate equipment name
-            const equipName = tData('equipment', e.id, e.name);
-            return `${equipName}${cost ? ` (${cost} po)` : ''}`;
-        };
+    // Pre-render an icon PNG for every unit.
+    const iconDataUrls = await Promise.all(army.map((u) => renderUnitIcon(u)));
 
-        const getCategoryString = (type: string) => equipment.filter(e => e?.type === type).map(formatEquip).join(", ");
+    const tableData = army.map((unit) => {
+      const effective = getEffectiveFaction(unit, selectedFaction);
+      const unitType = effective.units.find((u) => u.id === unit.unitTypeId);
+      if (!unitType) return ["", "", "", ""];
+      const equipment = unit.equipment
+        .map((id) => effective.availableEquipment.find((e) => e.id === id))
+        .filter(Boolean);
+      const formatEquip = (e: any) => {
+        const cost = e.costs[unit.unitTypeId as UnitRole];
+        const equipName = tData("equipment", e.id, e.name);
+        return `${equipName}${cost ? ` (${cost} po)` : ""}`;
+      };
 
-        const protection = getCategoryString('protection');
-        const melee = getCategoryString('melee');
-        const ranged = getCategoryString('ranged');
-        const special = getCategoryString('special');
-        const talent = getCategoryString('talent');
+      const getCategoryString = (type: string) =>
+        equipment.filter((e) => e?.type === type).map(formatEquip).join(", ");
 
-        let descriptionParts = [];
-        if (protection) descriptionParts.push(`Protection: ${protection}`);
-        if (melee) descriptionParts.push(`Melee: ${melee}`);
-        if (ranged) descriptionParts.push(`Ranged: ${ranged}`);
-        if (special) descriptionParts.push(`Special: ${special}`);
-        if (talent) descriptionParts.push(`Talents: ${talent}`);
+      const protection = getCategoryString("protection");
+      const melee = getCategoryString("melee");
+      const ranged = getCategoryString("ranged");
+      const special = getCategoryString("special");
+      const talent = getCategoryString("talent");
 
-        let singleCost = unitType.baseCost;
-        equipment.forEach(e => { if(e) singleCost += (e.costs[unit.unitTypeId as UnitRole] || 0); });
-        const qty = unit.quantity || 1;
-        
-        const unitName = tData('roles', unitType.id, unitType.name);
+      const descriptionParts: string[] = [];
+      if (protection) descriptionParts.push(`${t("protectionLabel")}: ${protection}`);
+      if (melee) descriptionParts.push(`${t("meleeLabel")}: ${melee}`);
+      if (ranged) descriptionParts.push(`${t("rangedLabel")}: ${ranged}`);
+      if (special) descriptionParts.push(`${t("pdfSpecialLabel")}: ${special}`);
+      if (talent) descriptionParts.push(`${t("pdfTalentsLabel")}: ${talent}`);
 
-        return [`${unitName} (x${qty})`, descriptionParts.join('\n'), `${singleCost * qty} po`];
+      let singleCost = unitType.baseCost;
+      equipment.forEach((e) => {
+        if (e) singleCost += (e.costs[unit.unitTypeId as UnitRole] || 0) as number;
+      });
+      const qty = unit.quantity || 1;
+
+      const displayName = getUnitDisplayName(unit, effective, language, tData);
+      const isMerc = Boolean(unit.sourceFactionId && unit.sourceFactionId !== selectedFaction.id);
+      const mercSuffix = isMerc ? ` [${tData("factions", effective.id, effective.name)}]` : "";
+
+      return ["", `${displayName} (x${qty})${mercSuffix}`, descriptionParts.join("\n"), `${singleCost * qty} po`];
     });
 
     autoTable(doc, {
-        startY: currentY,
-        head: [['Unit', 'Equipment / Talents', 'Cost']],
-        body: tableData,
-        theme: 'striped',
-        headStyles: { fillColor: [180, 83, 9] },
+      startY: currentY,
+      head: [["", t("pdfUnit"), t("pdfEquipment"), t("pdfCost")]],
+      body: tableData,
+      theme: "striped",
+      headStyles: { fillColor: [180, 83, 9] },
+      columnStyles: {
+        0: { cellWidth: 14, halign: "center" },
+        1: { cellWidth: 50 },
+        3: { cellWidth: 22, halign: "right" },
+      },
+      didDrawCell: (data) => {
+        if (data.section !== "body") return;
+        if (data.column.index !== 0) return;
+        const dataUrl = iconDataUrls[data.row.index];
+        if (!dataUrl) return;
+        const padding = 1.5;
+        const size = Math.max(0, Math.min(data.cell.height - padding * 2, 10));
+        const x = data.cell.x + (data.cell.width - size) / 2;
+        const y = data.cell.y + (data.cell.height - size) / 2;
+        try {
+          doc.addImage(dataUrl, "PNG", x, y, size, size);
+        } catch {
+          /* swallow — icon is decorative */
+        }
+      },
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || currentY;
@@ -742,7 +751,7 @@ export function ArmyBuilder() {
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4">
-                  {army.map((unit) => (
+                  {army.map((unit, idx) => (
                       <UnitCard
                       key={unit.instanceId}
                       unit={unit}
@@ -752,19 +761,23 @@ export function ArmyBuilder() {
                       onUpdateUnit={handleUpdateUnit}
                       onUpdateCustomName={handleUpdateCustomName}
                       onUpdateCustomIcon={handleUpdateCustomIcon}
+                      onMoveUp={(id) => handleMoveUnit(id, -1)}
+                      onMoveDown={(id) => handleMoveUnit(id, 1)}
+                      canMoveUp={idx > 0}
+                      canMoveDown={idx < army.length - 1}
                       dogHandlerActive={army.some(u => u.equipment.includes('talent_dog_handler'))}
                       />
                   ))}
                 </div>
 
-                {/* Recap : PO consommés */}
+                {/* Recap : PO consommés + figurines + seuil de moral */}
                 <div
                   className={`mt-6 p-5 border-2 bg-white shadow-lg ${
                     isOverBudget ? "border-red-700" : "border-[#cc6512]"
-                  } flex flex-wrap items-center justify-between gap-4`}
+                  } flex flex-wrap items-end justify-between gap-x-8 gap-y-4`}
                 >
                   <div className="flex items-center gap-3">
-                    <Wallet className={`w-6 h-6 ${isOverBudget ? "text-red-700" : "text-[#cc6512]"}`} />
+                    <Wallet className={`w-6 h-6 shrink-0 ${isOverBudget ? "text-red-700" : "text-[#cc6512]"}`} />
                     <div>
                       <div className="text-xs uppercase tracking-widest text-stone-700 font-bold">
                         {t("spent")} / {t("budgetLabel")}
@@ -773,11 +786,11 @@ export function ArmyBuilder() {
                         <span className={isOverBudget ? "text-red-700" : "text-[#cc6512]"}>
                           {currentPoints}
                         </span>
-                        <span className="text-stone-700"> / {budget} PO</span>
+                        <span className="text-stone-700"> / {budget}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <div className="text-xs uppercase tracking-widest text-stone-700 font-bold">
                       {t("remaining")}
                     </div>
@@ -787,6 +800,25 @@ export function ArmyBuilder() {
                       }`}
                     >
                       {remainingPoints} PO
+                    </div>
+                  </div>
+                  <div className="flex items-baseline gap-5 ml-auto">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-stone-600 font-bold">
+                        {t("totalModelsLabel")}
+                      </div>
+                      <div className="text-base font-bold text-stone-800 leading-tight">
+                        {totalArmyModels}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase tracking-widest text-stone-600 font-bold">
+                        {t("moralThresholdLabel")}
+                      </div>
+                      <div className="text-base font-bold text-stone-800 leading-tight">
+                        {moralThreshold}
+                        <span className="text-xs text-stone-500 font-normal ml-1">/ {totalArmyModels}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
