@@ -13,7 +13,6 @@ import { UnitCard } from "./UnitCard";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoImage from "figma:asset/b387a8d09d5ce09a0c5f23a9186ce8121bc6253f.png";
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 import spearSeparator from "figma:asset/5ab2f6353c027b93b9e17736b753efe042f656c5.png";
 import redBanner from "figma:asset/c1da3000e94ae65acf7da1287e23d10eff8fbf64.png";
@@ -497,24 +496,14 @@ export function ArmyBuilder() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-32">
 
-      {/* Top Header / Intro */}
+      {/* Intro (the logo + WIP badge live in the global header) */}
       <div className="flex flex-col items-center justify-center py-2 text-center space-y-2">
-          <div className="relative">
-             <div className="w-52 h-52 flex items-center justify-center relative z-10">
-                <img src={logoImage} alt="Pillage Logo" className="w-full h-full object-contain" />
-             </div>
-             <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-block bg-[#cc6512]/90 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-[#cc6512]/30 shadow-[0_0_10px_rgba(204,101,18,0.5)] whitespace-nowrap">
-               Work in progress
-             </span>
-          </div>
-          <div className="pt-4">
-            <h2 className="text-5xl font-bold text-[#232221] font-['UnifrakturCook'] mb-2 drop-shadow-sm">
-                {t('appTitle')}
-            </h2>
-            <p className="text-[#232221] font-medium max-w-md mx-auto leading-relaxed">
-                {t('appSubtitle')}
-            </p>
-          </div>
+          <h2 className="text-5xl font-bold text-[#232221] font-['UnifrakturCook'] mb-2 drop-shadow-sm">
+              {t('appTitle')}
+          </h2>
+          <p className="text-[#232221] font-medium max-w-md mx-auto leading-relaxed">
+              {t('appSubtitle')}
+          </p>
       </div>
       
       {/* Header / Configuration Cards */}

@@ -13,17 +13,23 @@ import { TranslationProvider, useTranslation } from "./components/pillages/Trans
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
+import logoImage from "figma:asset/b387a8d09d5ce09a0c5f23a9186ce8121bc6253f.png";
 import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords, ShieldAlert } from "lucide-react";
 
-function LanguageSelector() {
+function LanguageSelector({ variant = "light" }: { variant?: "light" | "dark" }) {
   const { language, setLanguage } = useTranslation();
+  const isDark = variant === "dark";
   return (
     <div className="flex items-center gap-2">
-      <Globe className="w-4 h-4 text-stone-500" />
+      <Globe className={`w-4 h-4 ${isDark ? "text-stone-300" : "text-[#232221]"}`} />
       <select
         value={language}
         onChange={(e) => setLanguage(e.target.value as "fr" | "en")}
-        className="bg-[#1c1917]/80 text-stone-300 text-sm border border-white/10 rounded-none px-2 py-1 focus:ring-[#cc6512]/50 focus:border-[#cc6512]/50 outline-none uppercase font-serif tracking-widest cursor-pointer hover:bg-black/60 transition-colors"
+        className={
+          isDark
+            ? "bg-[#1c1917]/80 text-stone-300 text-sm border border-white/15 rounded-none px-2 py-1 focus:ring-[#cc6512]/50 focus:border-[#cc6512] outline-none uppercase font-serif tracking-widest cursor-pointer hover:bg-black/60 transition-colors"
+            : "bg-transparent text-[#232221] text-sm border border-[#232221]/40 rounded-none px-2 py-1 focus:ring-[#cc6512]/50 focus:border-[#cc6512] outline-none uppercase font-serif tracking-widest cursor-pointer hover:border-[#cc6512]/60 transition-colors font-medium"
+        }
       >
         <option value="fr">FR</option>
         <option value="en">EN</option>
@@ -32,22 +38,28 @@ function LanguageSelector() {
   );
 }
 
-function NavItems({ onItemClick }: { onItemClick?: () => void }) {
-  const { user, signOut, loading, isAdmin } = useAuth();
-  const { t } = useTranslation();
-  const navigate = useNavigate();
+type NavVariant = "light" | "dark";
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `text-xs uppercase font-serif tracking-widest px-3 py-2 transition-colors ${
-      isActive ? "text-[#cc6512]" : "text-stone-300 hover:text-[#cc6512]"
-    }`;
-
-  const handleLogout = async () => {
-    onItemClick?.();
-    await signOut();
-    navigate("/");
+const buildPrimaryLinkClass = (variant: NavVariant) =>
+  ({ isActive }: { isActive: boolean }) => {
+    const base = "text-sm font-serif tracking-wider px-3 py-2 transition-colors";
+    if (isActive) return `${base} text-[#cc6512] font-bold`;
+    if (variant === "dark") return `${base} text-stone-200 hover:text-[#cc6512] font-medium`;
+    return `${base} text-[#232221] hover:text-[#cc6512] font-medium drop-shadow-sm`;
   };
 
+const buildSecondaryLinkClass = (variant: NavVariant) =>
+  ({ isActive }: { isActive: boolean }) => {
+    const base = "text-xs font-serif tracking-wider px-2 py-1 transition-colors";
+    if (isActive) return `${base} text-[#cc6512] font-bold`;
+    if (variant === "dark") return `${base} text-stone-200 hover:text-[#cc6512] font-medium`;
+    return `${base} text-[#232221] hover:text-[#cc6512] font-medium drop-shadow-sm`;
+  };
+
+function PrimaryNavItems({ onItemClick, variant = "light" }: { onItemClick?: () => void; variant?: NavVariant }) {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const linkClass = buildPrimaryLinkClass(variant);
   return (
     <>
       <NavLink to="/" className={linkClass} end onClick={onItemClick}>
@@ -67,10 +79,31 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
           </span>
         </NavLink>
       )}
+    </>
+  );
+}
+
+function SecondaryNavItems({ onItemClick, variant = "light" }: { onItemClick?: () => void; variant?: NavVariant }) {
+  const { user, signOut, loading, isAdmin } = useAuth();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const linkClass = buildSecondaryLinkClass(variant);
+
+  const handleLogout = async () => {
+    onItemClick?.();
+    await signOut();
+    navigate("/");
+  };
+
+  const buttonBase = "text-xs font-serif tracking-wider px-2 py-1 transition-colors inline-flex items-center gap-1 font-medium";
+  const buttonColor = variant === "dark" ? "text-stone-200" : "text-[#232221] drop-shadow-sm";
+
+  return (
+    <>
       {isAdmin && (
         <NavLink to="/admin/users" className={linkClass} onClick={onItemClick}>
-          <span className="inline-flex items-center gap-1 text-red-400">
-            <ShieldAlert className="w-3.5 h-3.5" /> Admin
+          <span className="inline-flex items-center gap-1 text-red-500">
+            <ShieldAlert className="w-3 h-3" /> Admin
           </span>
         </NavLink>
       )}
@@ -78,24 +111,24 @@ function NavItems({ onItemClick }: { onItemClick?: () => void }) {
         (user ? (
           <button
             onClick={handleLogout}
-            className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-red-400 transition-colors inline-flex items-center gap-1"
+            className={`${buttonBase} ${buttonColor} hover:text-red-500`}
           >
-            <LogOut className="w-3.5 h-3.5" /> {t("navLogout")}
+            <LogOut className="w-3 h-3" /> {t("navLogout")}
           </button>
         ) : (
           <Link
             to="/login"
             onClick={onItemClick}
-            className="text-xs uppercase font-serif tracking-widest px-3 py-2 text-stone-300 hover:text-[#cc6512] transition-colors inline-flex items-center gap-1"
+            className={`${buttonBase} ${buttonColor} hover:text-[#cc6512]`}
           >
-            <LogIn className="w-3.5 h-3.5" /> {t("navLogin")}
+            <LogIn className="w-3 h-3" /> {t("navLogin")}
           </Link>
         ))}
     </>
   );
 }
 
-function TopNav() {
+function SiteHeader() {
   const [open, setOpen] = React.useState(false);
   const location = useLocation();
 
@@ -104,26 +137,55 @@ function TopNav() {
   }, [location.pathname]);
 
   return (
-    <>
-      {/* Desktop nav */}
-      <div className="hidden md:flex absolute top-4 right-4 z-50 items-center gap-3 bg-[#1c1917]/70 px-3 py-2 border border-white/10 backdrop-blur-sm">
-        <NavItems />
-        <div className="h-4 w-px bg-white/10" />
+    <header className="relative z-30 pt-6 pb-4 sm:pt-8">
+      {/* Top-right actions (desktop only): admin, login/logout, language */}
+      <div className="hidden md:flex absolute top-4 right-4 z-40 items-center gap-3">
+        <SecondaryNavItems />
+        <div className="h-4 w-px bg-[#232221]/30" />
         <LanguageSelector />
       </div>
 
-      {/* Mobile burger button */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-        aria-expanded={open}
-        className="md:hidden absolute top-4 right-4 z-[60] flex items-center justify-center w-11 h-11 bg-[#1c1917]/80 border border-white/10 backdrop-blur-sm text-stone-200 hover:text-[#cc6512] transition-colors"
-      >
-        {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </button>
+      <div className="container mx-auto px-4">
+        {/* Logo */}
+        <div className="flex flex-col items-center text-center">
+          <div className="relative inline-block">
+            <Link to="/" aria-label="Accueil" className="block">
+              <img
+                src={logoImage}
+                alt="Pillage Logo"
+                className="w-32 h-32 sm:w-44 sm:h-44 object-contain drop-shadow-lg"
+              />
+            </Link>
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 inline-block bg-[#cc6512]/90 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 border border-[#cc6512]/30 shadow-[0_0_10px_rgba(204,101,18,0.5)] whitespace-nowrap">
+              Work in progress
+            </span>
+          </div>
+        </div>
 
-      {/* Mobile dropdown panel */}
+        {/* Desktop primary nav (centered, with fading rules above and below) */}
+        <div className="hidden md:block mt-8">
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-[#232221]/50 to-transparent" />
+          <nav className="flex items-center justify-center gap-2 flex-wrap py-3">
+            <PrimaryNavItems />
+          </nav>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-[#232221]/50 to-transparent" />
+        </div>
+
+        {/* Mobile burger trigger (top-right of the header) */}
+        <div className="md:hidden absolute top-4 right-4">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={open}
+            className="inline-flex items-center justify-center w-11 h-11 border border-[#232221]/40 text-[#232221] hover:text-[#cc6512] hover:border-[#cc6512]/50 transition-colors bg-white/40 backdrop-blur-sm"
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown panel: everything goes here */}
       {open && (
         <>
           <div
@@ -131,16 +193,18 @@ function TopNav() {
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="md:hidden fixed top-16 right-4 left-4 z-50 bg-[#1c1917]/95 border border-white/10 backdrop-blur-md p-4 flex flex-col gap-1 shadow-2xl">
-            <NavItems onItemClick={() => setOpen(false)} />
+          <div className="md:hidden fixed top-4 right-4 left-4 z-50 bg-[#1c1917]/95 border border-white/10 backdrop-blur-md p-4 flex flex-col gap-1 shadow-2xl">
+            <PrimaryNavItems onItemClick={() => setOpen(false)} variant="dark" />
+            <div className="h-px bg-white/10 my-2" />
+            <SecondaryNavItems onItemClick={() => setOpen(false)} variant="dark" />
             <div className="h-px bg-white/10 my-2" />
             <div className="px-3 py-1">
-              <LanguageSelector />
+              <LanguageSelector variant="dark" />
             </div>
           </div>
         </>
       )}
-    </>
+    </header>
   );
 }
 
@@ -155,9 +219,9 @@ function Layout({ children }: { children: React.ReactNode }) {
         />
       </div>
 
-      <TopNav />
+      <SiteHeader />
 
-      <main className="relative z-10 container mx-auto py-10 px-4 flex-1">{children}</main>
+      <main className="relative z-10 container mx-auto pb-10 px-4 flex-1">{children}</main>
 
       <footer className="relative z-10 bg-[#232221] py-6 mt-20">
         <div className="absolute top-0 left-0 w-full -translate-y-[99%] leading-none pointer-events-none">
