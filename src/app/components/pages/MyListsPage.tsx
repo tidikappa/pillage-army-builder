@@ -20,8 +20,29 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { validateArmy } from "../pillages/validation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const ALL = "__all__";
+
+type BudgetTier = "all" | "250" | "500" | "600" | "800" | "800plus";
+const BUDGET_TIERS: { value: BudgetTier; label: string }[] = [
+  { value: "all", label: "Tous les budgets" },
+  { value: "250", label: "Jusqu'à 250 po" },
+  { value: "500", label: "Jusqu'à 500 po" },
+  { value: "600", label: "Jusqu'à 600 po" },
+  { value: "800", label: "Jusqu'à 800 po" },
+  { value: "800plus", label: "Plus de 800 po" },
+];
+const matchesBudgetTier = (budget: number, tier: BudgetTier): boolean => {
+  switch (tier) {
+    case "all": return true;
+    case "250": return budget <= 250;
+    case "500": return budget > 250 && budget <= 500;
+    case "600": return budget > 500 && budget <= 600;
+    case "800": return budget > 600 && budget <= 800;
+    case "800plus": return budget > 800;
+  }
+};
 
 export function MyListsPage() {
   const { user, loading } = useAuth();
@@ -32,6 +53,7 @@ export function MyListsPage() {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [error, setError] = React.useState<string | null>(null);
   const [factionFilter, setFactionFilter] = React.useState<string>(ALL);
+  const [budgetFilter, setBudgetFilter] = React.useState<BudgetTier>("all");
 
   const fetchArmies = React.useCallback(async () => {
     if (!user) return;
@@ -106,45 +128,53 @@ export function MyListsPage() {
   };
 
   const availableFactions = factions.filter((f) => armies.some((a) => a.faction_id === f.id));
-  const filtered = factionFilter === ALL ? armies : armies.filter((a) => a.faction_id === factionFilter);
+  const filtered = armies.filter((a) => {
+    if (factionFilter !== ALL && a.faction_id !== factionFilter) return false;
+    if (!matchesBudgetTier(a.budget, budgetFilter)) return false;
+    return true;
+  });
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h2 className="text-4xl font-bold font-['UnifrakturCook'] text-[#232221]">{t("myListsTitle")}</h2>
 
-      {/* Faction filter */}
+      {/* Filter bar : faction select + budget select */}
       {armies.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-stone-200 mr-1">
-            {t("factionFilterLabel")}
-          </span>
-          <button
-            onClick={() => setFactionFilter(ALL)}
-            className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-all ${
-              factionFilter === ALL
-                ? "bg-[#cc6512] border-[#cc6512] text-white shadow-[0_0_10px_rgba(204,101,18,0.4)]"
-                : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
-            }`}
-          >
-            {t("allFactionsLabel")} ({armies.length})
-          </button>
-          {availableFactions.map((f) => {
-            const count = armies.filter((a) => a.faction_id === f.id).length;
-            const active = factionFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setFactionFilter(f.id)}
-                className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-all ${
-                  active
-                    ? "bg-[#cc6512] border-[#cc6512] text-white shadow-[0_0_10px_rgba(204,101,18,0.4)]"
-                    : "bg-black/40 border-white/15 text-stone-300 hover:border-[#cc6512]/50 hover:text-stone-100"
-                }`}
-              >
-                {tData("factions", f.id, f.name)} ({count})
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={factionFilter} onValueChange={setFactionFilter}>
+            <SelectTrigger className="h-10 w-auto min-w-[200px] rounded-none bg-black/80 border-2 border-[#cc6512]/50 text-stone-100 hover:border-[#cc6512] hover:bg-black/90 focus:ring-2 focus:ring-[#cc6512]/40 focus:border-[#cc6512] uppercase tracking-wider text-xs font-bold shadow-md transition-all">
+              <SelectValue placeholder={t("factionFilterLabel")} />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1c1917]/95 backdrop-blur-xl border-[#cc6512]/30 text-stone-200 rounded-none">
+              <SelectItem value={ALL} className="focus:bg-[#cc6512]/30 cursor-pointer py-2 font-serif">
+                {t("allFactionsLabel")} ({armies.length})
+              </SelectItem>
+              {availableFactions.map((f) => {
+                const count = armies.filter((a) => a.faction_id === f.id).length;
+                return (
+                  <SelectItem key={f.id} value={f.id} className="focus:bg-[#cc6512]/30 cursor-pointer py-2 font-serif">
+                    {tData("factions", f.id, f.name)} ({count})
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+
+          <Select value={budgetFilter} onValueChange={(v) => setBudgetFilter(v as BudgetTier)}>
+            <SelectTrigger className="h-10 w-auto min-w-[170px] rounded-none bg-black/80 border-2 border-[#cc6512]/50 text-stone-100 hover:border-[#cc6512] hover:bg-black/90 focus:ring-2 focus:ring-[#cc6512]/40 focus:border-[#cc6512] uppercase tracking-wider text-xs font-bold shadow-md transition-all">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-[#1c1917]/95 backdrop-blur-xl border-[#cc6512]/30 text-stone-200 rounded-none">
+              {BUDGET_TIERS.map((tier) => {
+                const count = armies.filter((a) => matchesBudgetTier(a.budget, tier.value)).length;
+                return (
+                  <SelectItem key={tier.value} value={tier.value} className="focus:bg-[#cc6512]/30 cursor-pointer py-2 font-serif">
+                    {tier.label} ({count})
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
         </div>
       )}
 
