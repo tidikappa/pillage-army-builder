@@ -86,7 +86,10 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
     if (hasHorn) hornCount += qty;
   });
 
-  if (army.length > 0 && warlordCount === 0) errors.push(t("err_noWarlord"));
+  // Saxons have the "Sans roi" rule: a warlord is not required.
+  if (army.length > 0 && warlordCount === 0 && faction.id !== "saxons") {
+    errors.push(t("err_noWarlord"));
+  }
   const allowedWarlords = 1 + Math.floor(warriorCount / 20);
   if (warlordCount > allowedWarlords) {
     errors.push(
@@ -112,6 +115,10 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
           .replace("$4", shooterPercent.toString())
       );
     }
+  }
+
+  // Cavalry cap: 25% by default, unlimited for Magyars and Huns.
+  if (faction.id !== "magyars" && faction.id !== "huns") {
     const maxCavalry = Math.ceil(totalModels * 0.25);
     if (cavalryCount > maxCavalry) {
       errors.push(
@@ -119,6 +126,24 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
           .replace("$1", cavalryCount.toString())
           .replace("$2", maxCavalry.toString())
           .replace("$3", totalModels.toString())
+      );
+    }
+  }
+
+  if (faction.id === "picts") {
+    // Pict warriors get free chainmail, but the count is limited to 2 per chef.
+    const pictArmorCount = army.reduce((sum, u) => {
+      if (u.unitTypeId !== "warrior") return sum;
+      const hasArmor = u.equipment.some((id) => id === "prot_armor" || id === "protection_armor");
+      return sum + (hasArmor ? u.quantity || 1 : 0);
+    }, 0);
+    const allowedArmor = warlordCount * 2;
+    if (pictArmorCount > allowedArmor) {
+      errors.push(
+        t("err_pictArmor")
+          .replace("$1", pictArmorCount.toString())
+          .replace("$2", warlordCount.toString())
+          .replace("$3", allowedArmor.toString())
       );
     }
   }

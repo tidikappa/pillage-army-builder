@@ -29,11 +29,13 @@ interface UnitCardProps {
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   dogHandlerActive?: boolean;
+  /** Full army composition, threaded down so the edit modal can apply army-wide rules. */
+  army?: ArmyUnit[];
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false }: UnitCardProps) {
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -336,6 +338,7 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
         }}
         editMode={true}
         unitToEdit={{
+          instanceId: unit.instanceId,
           unitTypeId: unit.unitTypeId,
           equipment: unit.equipment,
           quantity: unit.quantity,
@@ -343,6 +346,7 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
         }}
         currentPoints={0}
         maxPoints={999999}
+        army={army}
       />
     )}
     </>

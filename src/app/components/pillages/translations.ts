@@ -88,6 +88,7 @@ export const translations: Record<Language, any> = {
       err_oneHorn: "Votre armée ne peut posséder qu'un seul cor de guerre.",
       err_byzantineWarlord: "Le Chef d'une armée Byzantine doit obligatoirement être Byzantin (pas un mercenaire).",
       err_mercenaryQuota: "Les mercenaires totalisent $1 po sur $2 po — maximum autorisé : $3 po (50%).",
+      err_pictArmor: "Cottes de mailles gratuites : $1 guerriers Pictes en armure pour $2 chefs (max $3, soit 2 par chef).",
 
       // Forgot / update password
       forgotPassword: "Mot de passe oublié ?",
@@ -218,6 +219,7 @@ export const translations: Record<Language, any> = {
       err_oneHorn: "Your army can only have one war horn.",
       err_byzantineWarlord: "A Byzantine army's Warlord must be Byzantine (not a mercenary).",
       err_mercenaryQuota: "Mercenaries total $1 po out of $2 po — max allowed: $3 po (50%).",
+      err_pictArmor: "Free chainmail: $1 Pict warriors in armour for $2 chiefs (max $3 = 2 per chief).",
 
       // Forgot / update password
       forgotPassword: "Forgot password?",
@@ -272,7 +274,14 @@ export const translations: Record<Language, any> = {
         normans: "Normans",
         vikings: "Vikings",
         magyars: "Magyars",
-        byzantines: "Byzantines"
+        byzantines: "Byzantines",
+        merovingians: "Merovingian Franks",
+        romans: "Romans (East and West)",
+        saxons: "Saxons",
+        visigoths: "Visigoths",
+        britto_romans: "Britto-Romans",
+        huns: "The Huns",
+        picts: "Picts"
       },
       factionRules: {
         "Ne sont pas affectés par les effets de vent violent": "Unaffected by strong wind effects",
@@ -335,6 +344,12 @@ export const translations: Record<Language, any> = {
         ran_jav: "Javelin",
         ran_bow: "Bow",
         ran_xbow: "Crossbow",
+        ran_angon: "Angon",
+        ran_francisca: "Francisca",
+        ran_plumbata: "Plumbata",
+        mel_hasta: "Hasta",
+        mel_kontos: "Kontos",
+        spec_lasso: "Lasso",
         ranged_sling: "Sling",
         ranged_javelin: "Javelin",
         ranged_composite_bow: "Composite Bow",
@@ -371,6 +386,20 @@ export const translations: Record<Language, any> = {
         talent_fidelity: "Fidelity to the Emperor",
         talent_horse_reserve: "Horse Reserve",
         talent_bribe: "Bribe",
+        talent_scramasaxe: "Scramasax",
+        talent_mur_legions: "Legion Shield Wall",
+        talent_cornu: "Cornu",
+        talent_gardes_palais: "Palace Guards",
+        talent_foederati: "Foederati",
+        talent_contubernium: "Contubernium!",
+        talent_frappe_bouclier: "Shield Bash",
+        talent_epee_magique: "Magic Sword",
+        talent_ferveur_arienne: "Arian Fervour",
+        talent_equites_dumnonii: "Equites Dumnonii",
+        talent_calice_sacre: "Bearer of the Sacred Chalice",
+        talent_mobilite_steppes: "Steppe Mobility",
+        talent_cri_guerre: "War Cry",
+        talent_eclaireur: "Scout",
         
         // Talent Descriptions
         talent_quick_desc: "Your warlord possesses uncommon presence of mind and significant analytical ability. The warlord gains a +1 bonus to initiative rolls.",

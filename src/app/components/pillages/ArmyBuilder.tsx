@@ -1,10 +1,10 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { factions, ArmyUnit, Faction, UnitRole, getEffectiveFaction } from "../../data/gameData";
+import { factions, ArmyUnit, Faction, UnitRole, getEffectiveFaction, Supplement, SUPPLEMENT_LABELS } from "../../data/gameData";
 import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
 import { validateArmy } from "./validation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
@@ -545,11 +545,22 @@ export function ArmyBuilder() {
                   <SelectValue placeholder={t('factionPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1c1917]/95 backdrop-blur-xl border-[#cc6512]/30 text-stone-200 rounded-none shadow-2xl">
-                  {factions.map(f => (
-                    <SelectItem key={f.id} value={f.id} className="focus:bg-[#cc6512]/30 focus:text-[#cc6512]-100 cursor-pointer py-3 font-serif">
-                      {tData('factions', f.id, f.name)}
-                    </SelectItem>
-                  ))}
+                  {(["base", "orient", "finis_imperii"] as Supplement[]).map((supp) => {
+                    const group = factions.filter(f => (f.supplement ?? 'base') === supp);
+                    if (group.length === 0) return null;
+                    return (
+                      <SelectGroup key={supp}>
+                        <SelectLabel className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 font-bold px-2 pt-3 pb-1">
+                          {SUPPLEMENT_LABELS[supp]}
+                        </SelectLabel>
+                        {group.map(f => (
+                          <SelectItem key={f.id} value={f.id} className="focus:bg-[#cc6512]/30 focus:text-[#cc6512]-100 cursor-pointer py-3 font-serif">
+                            {tData('factions', f.id, f.name)}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -730,11 +741,12 @@ export function ArmyBuilder() {
 
           {/* Recruitment Button (Moved Here) */}
           <div className="mb-8 drop-shadow-xl">
-            <UnitForm 
-              faction={selectedFaction} 
+            <UnitForm
+              faction={selectedFaction}
               onAddUnit={handleAddUnit}
               currentPoints={currentPoints}
               maxPoints={budget}
+              army={army}
             />
           </div>
 
@@ -766,6 +778,7 @@ export function ArmyBuilder() {
                       canMoveUp={idx > 0}
                       canMoveDown={idx < army.length - 1}
                       dogHandlerActive={army.some(u => u.equipment.includes('talent_dog_handler'))}
+                      army={army}
                       />
                   ))}
                 </div>

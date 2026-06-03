@@ -138,14 +138,20 @@ interface UnitFormProps {
   onOpenChange?: (open: boolean) => void;
   editMode?: boolean;
   unitToEdit?: {
+    instanceId?: string;
     unitTypeId: string;
     equipment: string[];
     quantity: number;
     sourceFactionId?: string;
   };
+  /**
+   * Current army composition. Used for cross-unit rules like the Pict
+   * "free chainmail" bonus (max 2 warriors per chef).
+   */
+  army?: import("../../data/gameData").ArmyUnit[];
 }
 
-export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen: externalIsOpen, onOpenChange, editMode = false, unitToEdit }: UnitFormProps) {
+export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen: externalIsOpen, onOpenChange, editMode = false, unitToEdit, army = [] }: UnitFormProps) {
   const { t, tData } = useTranslation();
   const [selectedUnitId, setSelectedUnitId] = React.useState<string>("");
   const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
@@ -169,6 +175,27 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   }, [faction, mercFactionId]);
 
   const selectedUnit = effectiveFaction.units.find((u) => u.id === selectedUnitId);
+
+  // Pict "free chainmail" rule (Pillards de forts romains).
+  // Slots = 2 × number of chefs; counted across all warrior units that wear
+  // an armour, EXCLUDING the unit currently being edited so toggling it
+  // off-then-on doesn't appear over the limit.
+  const pictArmorState = React.useMemo(() => {
+    if (faction.id !== "picts") return null;
+    const chefCount = army
+      .filter((u) => u.unitTypeId === "warlord")
+      .reduce((s, u) => s + (u.quantity || 1), 0);
+    const otherArmored = army
+      .filter((u) => u.unitTypeId === "warrior")
+      .filter((u) => u.equipment.includes("prot_armor"))
+      .filter((u) => !unitToEdit?.instanceId || u.instanceId !== unitToEdit.instanceId)
+      .reduce((s, u) => s + (u.quantity || 1), 0);
+    return {
+      slotsTotal: chefCount * 2,
+      slotsRemaining: Math.max(0, chefCount * 2 - otherArmored),
+      chefCount,
+    };
+  }, [faction.id, army, unitToEdit?.instanceId]);
 
   // Available mercenaries: only when the army's faction is Byzantine.
   // Rule: all non-warlord units from other factions are recruitable.
@@ -653,21 +680,39 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                     const isChecked = selectedEquipment.includes(eq.id);
                                     const equipName = tData('equipment', eq.id, eq.name);
 
+                                    // Pict free chainmail: hide the option for warriors when there are no remaining slots.
+                                    const isPictWarriorArmor =
+                                      pictArmorState !== null &&
+                                      selectedUnit.id === 'warrior' &&
+                                      eq.id === 'prot_armor';
+                                    if (isPictWarriorArmor) {
+                                      const noSlots = pictArmorState!.slotsTotal === 0;
+                                      const noRemaining = pictArmorState!.slotsRemaining < quantity;
+                                      // Hide when no chefs in the army yet, OR when no remaining slots and not currently selected.
+                                      if (noSlots) return null;
+                                      if (noRemaining && !isChecked) return null;
+                                    }
+
                                     return (
-                                    <div key={eq.id} 
+                                    <div key={eq.id}
                                         onClick={() => handleEquipmentToggle(eq.id, type)}
                                         className={`relative flex items-center justify-between p-3 rounded-none border cursor-pointer transition-all duration-200
                                             ${isChecked ? "bg-[#cc6512]/10 border-[#cc6512]/30" : "bg-black/20 border-white/5 hover:bg-white/5 hover:border-white/10"}
                                         `}
                                     >
                                         <div className="flex items-center gap-3">
-                                            <Checkbox 
-                                                id={eq.id} 
+                                            <Checkbox
+                                                id={eq.id}
                                                 checked={isChecked}
                                                 className="border-stone-600 data-[state=checked]:bg-[#cc6512] data-[state=checked]:border-[#cc6512] rounded-none shadow-sm pointer-events-none"
                                             />
                                             <Label htmlFor={eq.id} className="cursor-pointer font-medium text-stone-300 pointer-events-none">
                                                 {equipName}
+                                                {isPictWarriorArmor && (
+                                                  <span className="block text-[10px] text-[#cc6512]/80 font-normal normal-case tracking-normal">
+                                                    {pictArmorState!.slotsRemaining} / {pictArmorState!.slotsTotal} cottes libres (2 par chef)
+                                                  </span>
+                                                )}
                                             </Label>
                                         </div>
                                         <span className={`text-xs font-bold font-mono ${isChecked ? "text-[#cc6512]" : "text-stone-600"}`}>{cost > 0 ? `+${cost}` : '0'}</span>
