@@ -245,17 +245,16 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
 
     if (selectedUnitId) {
       setQuantity(1);
-      // Special defaults for Byzantine Kataphraktoi (Mandatory equipment).
-      // Only applies to native Byzantine huscarl, not mercs (mercs use their
-      // own faction's defaults).
-      if (effectiveFaction.id === 'byzantines' && selectedUnitId === 'huscarl' && !mercFactionId) {
-          setSelectedEquipment([
-              'protection_shield',
-              'protection_armor',
-              'weapon_spear',
-              'weapon_base',
-              'spec_horse'
-          ]);
+      // Mandatory equipment for Kataphraktoi-like huscarls. Each entry lists
+      // the equipment IDs that are locked in for the unit.
+      const KATAPHRAKTOI_LOADOUT: Record<string, string[]> = {
+        byzantines: ['protection_shield', 'protection_armor', 'weapon_spear', 'weapon_base', 'spec_horse'],
+        romans: ['prot_armor', 'mel_kontos', 'mel_base', 'spec_horse'],
+        huns: ['prot_armor', 'mel_kontos', 'mel_base', 'spec_horse'],
+      };
+      const mandatoryLoadout = KATAPHRAKTOI_LOADOUT[effectiveFaction.id];
+      if (mandatoryLoadout && selectedUnitId === 'huscarl' && !mercFactionId) {
+          setSelectedEquipment([...mandatoryLoadout]);
           return;
       }
 
@@ -274,14 +273,17 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
 
   const handleEquipmentToggle = (eqId: string, type: string) => {
     setSelectedEquipment((prev) => {
-      // Special restriction for Byzantine Kataphraktoi
-      if (effectiveFaction.id === 'byzantines' && selectedUnitId === 'huscarl') {
-          const mandatoryIds = ['protection_shield', 'protection_armor', 'weapon_spear', 'weapon_base', 'spec_horse'];
-          
-          // Prevent modifying mandatory protection/melee
+      // Lock-in equipment for Kataphraktoi-style huscarls in Byzantines, Romans and Huns.
+      const KATAPHRAKTOI_LOADOUT: Record<string, string[]> = {
+        byzantines: ['protection_shield', 'protection_armor', 'weapon_spear', 'weapon_base', 'spec_horse'],
+        romans: ['prot_armor', 'mel_kontos', 'mel_base', 'spec_horse'],
+        huns: ['prot_armor', 'mel_kontos', 'mel_base', 'spec_horse'],
+      };
+      const mandatoryIds = KATAPHRAKTOI_LOADOUT[effectiveFaction.id];
+      if (mandatoryIds && selectedUnitId === 'huscarl') {
+          // Block changes to the mandatory categories (protection + melee).
           if (type === 'protection' || type === 'melee') return prev;
-          
-          // Prevent modifying mandatory special (Horse), allow others
+          // Allow special toggles EXCEPT the mandatory horse / lasso etc.
           if (type === 'special' && mandatoryIds.includes(eqId)) return prev;
       }
 
