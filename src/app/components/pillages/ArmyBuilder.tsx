@@ -20,6 +20,8 @@ import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.pn
 import spearSeparator from "figma:asset/5ab2f6353c027b93b9e17736b753efe042f656c5.png";
 import redBanner from "figma:asset/c1da3000e94ae65acf7da1287e23d10eff8fbf64.png";
 import blueBanner from "figma:asset/0bcbf8c8072cd6467fa46891d6970a2c22c684e8.png";
+import bannerTop from "figma:asset/banner_top.png";
+import bannerBottom from "figma:asset/banner_bottom.png";
 import { useTranslation } from "./TranslationContext";
 import { useAuth } from "../../lib/AuthContext";
 import { supabase, isSupabaseConfigured } from "../../lib/supabase";
@@ -674,21 +676,63 @@ export function ArmyBuilder() {
              </div>
           )}
           
-          {/* Special Rules Banner */}
+          {/* Special Rules Banner — torn-paper parchment with solid teal middle */}
           {selectedFaction.specialRules.length > 0 && (
              <>
-               <div 
-                 className="p-6 backdrop-blur-sm min-h-[100px] flex flex-col justify-center"
-                 style={{ backgroundImage: `url(${blueBanner})`, backgroundSize: '100% 100%' }}
-               >
-                 <h3 className="text-white font-serif font-bold tracking-widest uppercase text-xs mb-2 flex items-center gap-2 px-2">
-                   <Flame className="w-3 h-3" /> {t('factionBonus')}
-                 </h3>
-                 <ul className="space-y-1 px-2">
-                   {selectedFaction.specialRules.map((rule, idx) => (
-                     <li key={idx} className="text-white text-sm">{tData('factionRules', rule, rule)}</li>
-                   ))}
-                 </ul>
+               <div className="relative drop-shadow-[0_4px_25px_rgba(15,95,94,0.25)]">
+                 {/* Top torn edge */}
+                 <img
+                   src={bannerTop}
+                   alt=""
+                   aria-hidden="true"
+                   className="block w-full select-none pointer-events-none"
+                 />
+
+                 {/* Solid teal middle — width matches the visible (non-transparent) area of the banner PNG (1312/1336 ≈ 98.2%, so 0.9% on each side). */}
+                 <div className="bg-[#5BA5A4] mx-[0.9%]">
+                   {/* Header */}
+                   <div className="flex items-center gap-3 px-10 pt-10 pb-4">
+                     <Flame className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]" />
+                     <h3 className="text-white font-serif font-bold tracking-[0.25em] uppercase text-base drop-shadow">
+                       {t('factionBonus')}
+                     </h3>
+                     <span className="ml-auto text-[10px] uppercase tracking-widest text-white/70 font-bold">
+                       {selectedFaction.specialRules.length}
+                     </span>
+                   </div>
+
+                   {/* Decorative thin gradient divider under the header */}
+                   <div className="mx-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+
+                   {/* Rules list with thin dividers */}
+                   <ul className="px-10 pb-10 pt-4 divide-y divide-white/15">
+                   {selectedFaction.specialRules.map((rule, idx) => {
+                     const translated = tData('factionRules', rule, rule);
+                     const colonIdx = translated.indexOf(':');
+                     const hasTitle = colonIdx > 0 && colonIdx < 70;
+                     const title = hasTitle ? translated.slice(0, colonIdx).trim() : null;
+                     const desc = hasTitle ? translated.slice(colonIdx + 1).trim() : translated.trim();
+                     return (
+                       <li key={idx} className="py-3.5 first:pt-2">
+                         {title && (
+                           <div className="font-serif font-bold text-white uppercase tracking-widest text-sm mb-1 drop-shadow">
+                             {title}
+                           </div>
+                         )}
+                         <p className="text-white/95 text-sm leading-relaxed">{desc}</p>
+                       </li>
+                     );
+                   })}
+                   </ul>
+                 </div>
+
+                 {/* Bottom torn edge */}
+                 <img
+                   src={bannerBottom}
+                   alt=""
+                   aria-hidden="true"
+                   className="block w-full select-none pointer-events-none"
+                 />
                </div>
                <div className="flex justify-center py-6">
                  <img src={spearSeparator} alt="Separator" className="w-full max-w-2xl opacity-80" />

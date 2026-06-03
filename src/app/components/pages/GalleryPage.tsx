@@ -230,12 +230,18 @@ export function GalleryPage() {
         {filtered.map((a) => {
           const faction = factions.find((f) => f.id === a.faction_id);
           const isOpen = expanded.has(a.id);
+          const isFav = favorites.has(a.id);
           const violationCount = faction
             ? validateArmy(a.units as ArmyUnit[], faction, t).length
             : 0;
+          const cardBorder = violationCount > 0
+            ? "border border-red-700/50 hover:border-red-500/70"
+            : isFav
+              ? "border-y border-r border-white/15 border-l-4 border-l-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.18)] hover:border-l-amber-300"
+              : "border border-white/15 hover:border-[#cc6512]/40";
           return (
             <li key={a.id}>
-              <Card className={`bg-black/70 rounded-none text-stone-100 shadow-xl transition-colors ${violationCount > 0 ? "border border-red-700/50 hover:border-red-500/70" : "border border-white/15 hover:border-[#cc6512]/40"}`}>
+              <Card className={`bg-black/70 rounded-none text-stone-100 shadow-xl transition-colors ${cardBorder}`}>
                 <CardHeader
                   className="cursor-pointer p-5"
                   onClick={() => toggle(a.id)}
@@ -260,6 +266,11 @@ export function GalleryPage() {
                           <Calendar className="w-3.5 h-3.5 text-stone-400" />
                           {new Date(a.created_at).toLocaleDateString()}
                         </span>
+                        {isFav && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 border border-amber-400/60 text-amber-200 text-[10px] font-bold uppercase tracking-widest shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+                            <Star className="w-3 h-3 fill-current" /> Favori
+                          </span>
+                        )}
                       </div>
                       {violationCount > 0 && (
                         <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-red-950/50 border border-red-700/50 text-red-200 text-[11px] font-bold uppercase tracking-widest">
@@ -283,15 +294,15 @@ export function GalleryPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => toggleFavorite(a.id)}
-                          className={`h-8 w-8 ${
-                            favorites.has(a.id)
-                              ? "text-amber-400 hover:text-amber-300"
+                          className={`h-8 w-8 rounded-none transition-all ${
+                            isFav
+                              ? "bg-amber-500/25 border border-amber-400/70 text-amber-300 hover:bg-amber-500/35 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
                               : "text-stone-400 hover:text-amber-400"
                           }`}
-                          title={favorites.has(a.id) ? t("favoriteRemove") : t("favoriteAdd")}
-                          aria-label={favorites.has(a.id) ? t("favoriteRemove") : t("favoriteAdd")}
+                          title={isFav ? t("favoriteRemove") : t("favoriteAdd")}
+                          aria-label={isFav ? t("favoriteRemove") : t("favoriteAdd")}
                         >
-                          <Star className={`w-4 h-4 ${favorites.has(a.id) ? "fill-current" : ""}`} />
+                          <Star className={`w-4 h-4 ${isFav ? "fill-current" : ""}`} />
                         </Button>
                         <Button
                           variant="ghost"
