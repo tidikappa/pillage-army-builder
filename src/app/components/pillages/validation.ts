@@ -98,14 +98,18 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
   if (bannerCount > 1) errors.push(t("err_oneBanner"));
   if (hornCount > 1) errors.push(t("err_oneHorn"));
 
+  // Shooters cap: 25% by default, 50% for Welsh, unlimited for Magyars.
   if (faction.id !== "magyars") {
-    const maxShooters = Math.ceil(totalModels * 0.25);
+    const shooterRatio = faction.id === "welsh" ? 0.5 : 0.25;
+    const shooterPercent = Math.round(shooterRatio * 100);
+    const maxShooters = Math.ceil(totalModels * shooterRatio);
     if (shooterCount > maxShooters) {
       errors.push(
         t("err_tooManyShooters")
           .replace("$1", shooterCount.toString())
           .replace("$2", maxShooters.toString())
           .replace("$3", totalModels.toString())
+          .replace("$4", shooterPercent.toString())
       );
     }
     const maxCavalry = Math.ceil(totalModels * 0.25);
