@@ -124,6 +124,15 @@ export const translations: Record<Language, any> = {
       pdfTalentsLabel: "Talents",
       pdfArmySummary: "Composition",
       pdfMoralSummary: "Seuil de moral",
+
+      // Favorites + Fork
+      favoriteAdd: "Ajouter aux favoris",
+      favoriteRemove: "Retirer des favoris",
+      favoritesFilter: "Favoris",
+      noFavorites: "Aucune liste dans tes favoris pour l'instant.",
+      forkInBuilder: "Importer dans le builder",
+      forkPrefix: "Copie de",
+      forkLoaded: "Liste importée. Modifie-la et sauvegarde-la comme la tienne.",
       err_tooManyShooters: "Trop de tireurs à pied ($1). Limite : $2 ($4% de $3 figurines).",
       err_tooManyCavalry: "Trop de cavaliers ($1). Limite: $2 (25% de $3 figurines).",
       err_recruitUniqueTalent: "Impossible de recruter plusieurs unités avec des talents uniques simultanément.",
@@ -255,6 +264,15 @@ export const translations: Record<Language, any> = {
       pdfTalentsLabel: "Talents",
       pdfArmySummary: "Composition",
       pdfMoralSummary: "Morale threshold",
+
+      // Favorites + Fork
+      favoriteAdd: "Add to favorites",
+      favoriteRemove: "Remove from favorites",
+      favoritesFilter: "Favorites",
+      noFavorites: "You haven't favorited any list yet.",
+      forkInBuilder: "Open in builder",
+      forkPrefix: "Copy of",
+      forkLoaded: "List imported. Edit it and save as your own.",
       err_tooManyShooters: "Too many foot shooters ($1). Limit: $2 ($4% of $3 models).",
       err_tooManyCavalry: "Too many cavalry ($1). Limit: $2 (25% of $3 models).",
       err_recruitUniqueTalent: "Cannot recruit multiple units with unique talents simultaneously.",

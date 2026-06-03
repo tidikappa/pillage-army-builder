@@ -257,7 +257,44 @@ zéro résultat (lecture) ou une erreur (suppression).
 La suppression d'un utilisateur supprime aussi toutes ses listes d'armée via
 le `on delete cascade` de la table `armies`.
 
-## 7. (Optionnel) Désactiver la confirmation email
+## 7. Favoris (depuis v1.9.0)
+
+Pour que les utilisateurs puissent mettre des listes en favoris, exécute dans
+**SQL Editor** :
+
+```sql
+create table public.army_favorites (
+  user_id uuid references auth.users(id) on delete cascade not null,
+  army_id uuid references public.armies(id) on delete cascade not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, army_id)
+);
+
+create index army_favorites_user_idx on public.army_favorites(user_id);
+
+alter table public.army_favorites enable row level security;
+
+create policy "Users can read their own favorites"
+  on public.army_favorites for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+create policy "Users can add to their own favorites"
+  on public.army_favorites for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "Users can remove their own favorites"
+  on public.army_favorites for delete
+  to authenticated
+  using (auth.uid() = user_id);
+```
+
+Les favoris sont strictement personnels : un utilisateur ne voit que ses
+propres favoris, et seule la suppression d'une liste publiée par son auteur
+(ou par un admin) supprime aussi les favoris associés via `on delete cascade`.
+
+## 8. (Optionnel) Désactiver la confirmation email
 
 Pour les tests locaux, dans **Authentication → Providers → Email**, désactiver
 "Confirm email" pour que les inscriptions soient immédiatement valides.

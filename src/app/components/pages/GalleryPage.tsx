@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase, isSupabaseConfigured, SavedArmy } from "../../lib/supabase";
 import { factions, ArmyUnit } from "../../data/gameData";
 import { ArmyView } from "../pillages/ArmyView";
@@ -6,20 +7,94 @@ import { useTranslation } from "../pillages/TranslationContext";
 import { useAuth } from "../../lib/AuthContext";
 import { Card, CardHeader, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork } from "lucide-react";
 import { toast } from "sonner";
 import { validateArmy } from "../pillages/validation";
 
 const ALL = "__all__";
+const FAVORITES = "__favorites__";
 
 export function GalleryPage() {
   const { t, tData } = useTranslation();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const navigate = useNavigate();
   const [armies, setArmies] = React.useState<SavedArmy[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set());
   const [error, setError] = React.useState<string | null>(null);
   const [factionFilter, setFactionFilter] = React.useState<string>(ALL);
+  const [showFavoritesOnly, setShowFavoritesOnly] = React.useState(false);
+  const [favorites, setFavorites] = React.useState<Set<string>>(new Set());
+
+  // Load the current user's favorite army ids.
+  React.useEffect(() => {
+    if (!user || !isSupabaseConfigured) {
+      setFavorites(new Set());
+      return;
+    }
+    supabase
+      .from("army_favorites")
+      .select("army_id")
+      .eq("user_id", user.id)
+      .then(({ data, error }) => {
+        if (error) return;
+        setFavorites(new Set((data ?? []).map((r) => (r as { army_id: string }).army_id)));
+      });
+  }, [user]);
+
+  const toggleFavorite = async (armyId: string) => {
+    if (!user) {
+      navigate("/login", { state: { from: "/gallery" } });
+      return;
+    }
+    const isFav = favorites.has(armyId);
+    // Optimistic update
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(armyId);
+      else next.add(armyId);
+      return next;
+    });
+    if (isFav) {
+      const { error } = await supabase
+        .from("army_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("army_id", armyId);
+      if (error) {
+        toast.error(error.message);
+        // Revert
+        setFavorites((prev) => new Set(prev).add(armyId));
+      }
+    } else {
+      const { error } = await supabase
+        .from("army_favorites")
+        .insert({ user_id: user.id, army_id: armyId });
+      if (error) {
+        toast.error(error.message);
+        setFavorites((prev) => {
+          const next = new Set(prev);
+          next.delete(armyId);
+          return next;
+        });
+      }
+    }
+  };
+
+  const forkIntoBuilder = (a: SavedArmy) => {
+    navigate("/", {
+      state: {
+        loadArmy: {
+          armyName: `${t("forkPrefix")} ${a.army_name || ""}`.trim(),
+          factionId: a.faction_id,
+          budget: a.budget,
+          units: a.units as ArmyUnit[],
+          // No `id` → saved as a new entry, the original is untouched.
+        },
+      },
+    });
+    toast.success(t("forkLoaded"));
+  };
 
   const adminDelete = async (army: SavedArmy) => {
     if (
@@ -69,7 +144,11 @@ export function GalleryPage() {
     return factions.filter((f) => ids.has(f.id));
   }, [armies]);
 
-  const filtered = factionFilter === ALL ? armies : armies.filter((a) => a.faction_id === factionFilter);
+  const factionFiltered =
+    factionFilter === ALL ? armies : armies.filter((a) => a.faction_id === factionFilter);
+  const filtered = showFavoritesOnly
+    ? factionFiltered.filter((a) => favorites.has(a.id))
+    : factionFiltered;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -103,6 +182,19 @@ export function GalleryPage() {
           >
             {t("allFactionsLabel")} ({armies.length})
           </button>
+          {user && (
+            <button
+              onClick={() => setShowFavoritesOnly((v) => !v)}
+              className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border transition-all inline-flex items-center gap-1 ${
+                showFavoritesOnly
+                  ? "bg-amber-500 border-amber-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                  : "bg-black/40 border-white/15 text-stone-300 hover:border-amber-500/60 hover:text-stone-100"
+              }`}
+            >
+              <Star className={`w-3.5 h-3.5 ${showFavoritesOnly ? "fill-current" : ""}`} />
+              {t("favoritesFilter")} ({favorites.size})
+            </button>
+          )}
           {availableFactions.map((f) => {
             const count = armies.filter((a) => a.faction_id === f.id).length;
             const active = factionFilter === f.id;
@@ -129,7 +221,9 @@ export function GalleryPage() {
         <p className="text-stone-200 italic">{t("noPublicArmies")}</p>
       )}
       {!loading && !error && armies.length > 0 && filtered.length === 0 && (
-        <p className="text-stone-200 italic">{t("noArmiesForFaction")}</p>
+        <p className="text-stone-200 italic">
+          {showFavoritesOnly ? t("noFavorites") : t("noArmiesForFaction")}
+        </p>
       )}
 
       <ul className="space-y-4">
@@ -185,6 +279,30 @@ export function GalleryPage() {
                         </span>
                       </div>
                       <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleFavorite(a.id)}
+                          className={`h-8 w-8 ${
+                            favorites.has(a.id)
+                              ? "text-amber-400 hover:text-amber-300"
+                              : "text-stone-400 hover:text-amber-400"
+                          }`}
+                          title={favorites.has(a.id) ? t("favoriteRemove") : t("favoriteAdd")}
+                          aria-label={favorites.has(a.id) ? t("favoriteRemove") : t("favoriteAdd")}
+                        >
+                          <Star className={`w-4 h-4 ${favorites.has(a.id) ? "fill-current" : ""}`} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => forkIntoBuilder(a)}
+                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
+                          title={t("forkInBuilder")}
+                          aria-label={t("forkInBuilder")}
+                        >
+                          <GitFork className="w-4 h-4" />
+                        </Button>
                         {isAdmin && (
                           <Button
                             variant="ghost"
