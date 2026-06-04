@@ -294,7 +294,129 @@ Les favoris sont strictement personnels : un utilisateur ne voit que ses
 propres favoris, et seule la suppression d'une liste publiée par son auteur
 (ou par un admin) supprime aussi les favoris associés via `on delete cascade`.
 
-## 8. (Optionnel) Désactiver la confirmation email
+## 8. Signalement de listes (depuis v1.13.0)
+
+Tout visiteur (connecté ou non) peut signaler une liste publique depuis la
+galerie. Une notification est postée dans un salon Discord via webhook pour
+permettre une modération rapide.
+
+### a. Table + RLS
+
+Dans **SQL Editor**, exécute :
+
+```sql
+create table public.army_reports (
+  id uuid primary key default gen_random_uuid(),
+  army_id uuid references public.armies(id) on delete cascade not null,
+  reporter_user_id uuid references auth.users(id) on delete set null,
+  reason text,
+  status text not null default 'pending'
+    check (status in ('pending', 'reviewed', 'dismissed')),
+  created_at timestamptz not null default now()
+);
+
+create index army_reports_army_idx on public.army_reports(army_id);
+create index army_reports_status_idx on public.army_reports(status);
+
+-- Empêche un même utilisateur connecté de signaler 2x la même liste.
+-- Les anonymes (reporter_user_id NULL) ne sont pas concernés par cet index
+-- partiel, on s'appuie sur localStorage côté front pour limiter le spam.
+create unique index army_reports_unique_per_user
+  on public.army_reports(army_id, reporter_user_id)
+  where reporter_user_id is not null;
+
+alter table public.army_reports enable row level security;
+
+-- Insert ouvert à tous (anon + authenticated). reporter_user_id doit être
+-- soit NULL (anonyme), soit l'ID du caller (pas d'usurpation).
+create policy "Anyone can report a public army"
+  on public.army_reports for insert
+  to anon, authenticated
+  with check (
+    reporter_user_id is null
+    or reporter_user_id = auth.uid()
+  );
+
+-- Lecture / update / delete réservés aux admins.
+create policy "Admins can read reports"
+  on public.army_reports for select
+  using (coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'admin');
+
+create policy "Admins can update reports"
+  on public.army_reports for update
+  using (coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'admin');
+
+create policy "Admins can delete reports"
+  on public.army_reports for delete
+  using (coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'admin');
+```
+
+### b. Créer un webhook Discord
+
+1. Ouvre Discord, va sur un serveur perso (ou crée-en un, **+** dans la
+   sidebar de gauche, **Créer le mien**).
+2. Crée un salon textuel, par exemple `#pillage-signalements`.
+3. Clic droit sur le salon, **Modifier le salon**, onglet **Intégrations**,
+   **Webhooks**, **Nouveau webhook**.
+4. Renomme-le `Pillage Reports`, clique **Copier l'URL du webhook**.
+   L'URL ressemble à `https://discord.com/api/webhooks/123456789/abcDEF...`.
+
+Cette URL agit comme un secret, ne la commit pas dans le repo.
+
+### c. Déployer l'Edge Function
+
+La fonction est versionnée dans `supabase/functions/notify-report/`.
+
+Installe la CLI Supabase si pas déjà fait :
+
+```bash
+brew install supabase/tap/supabase
+supabase login
+supabase link --project-ref <ton-project-ref>
+```
+
+Ajoute les secrets nécessaires :
+
+```bash
+supabase secrets set DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
+supabase secrets set APP_BASE_URL=https://pillage-army-builder.vercel.app
+```
+
+Puis déploie :
+
+```bash
+supabase functions deploy notify-report --no-verify-jwt
+```
+
+Le flag `--no-verify-jwt` est important, le webhook DB n'envoie pas de JWT
+utilisateur.
+
+### d. Créer le Database Webhook
+
+Dans Supabase Dashboard → **Database → Webhooks → Create a new hook** :
+
+- Name : `notify-report-on-insert`
+- Table : `army_reports`
+- Events : cocher **Insert** uniquement
+- Type : **Supabase Edge Functions**
+- Edge Function : `notify-report`
+- HTTP Headers : laisser par défaut (Supabase ajoute son token interne)
+
+Sauvegarde. Désormais, chaque insertion dans `army_reports` déclenche
+l'envoi de la notification Discord.
+
+### e. Test rapide
+
+Depuis l'app, signale une liste de test depuis la galerie. Tu devrais voir
+un message dans ton salon Discord en quelques secondes (avec notification
+push si tu as l'app mobile Discord). Si rien n'arrive :
+
+- Vérifie les logs dans **Edge Functions → notify-report → Logs**.
+- Vérifie que le webhook a bien été déclenché dans **Database → Webhooks**.
+- Re-vérifie que la variable `DISCORD_WEBHOOK_URL` est bien renseignée
+  dans **Project Settings → Edge Functions → Secrets**.
+
+## 9. (Optionnel) Désactiver la confirmation email
 
 Pour les tests locaux, dans **Authentication → Providers → Email**, désactiver
 "Confirm email" pour que les inscriptions soient immédiatement valides.

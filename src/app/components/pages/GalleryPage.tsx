@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork } from "lucide-react";
 import { toast } from "sonner";
 import { validateArmy } from "../pillages/validation";
+import { ReportArmyButton } from "../pillages/ReportArmyButton";
 
 const ALL = "__all__";
 const FAVORITES = "__favorites__";
@@ -344,6 +345,7 @@ export function GalleryPage() {
                         >
                           <GitFork className="w-4 h-4" />
                         </Button>
+                        <ReportArmyButton army={a} />
                         {isAdmin && (
                           <Button
                             variant="ghost"

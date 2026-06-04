@@ -14,3 +14,7 @@ yarn-error.log*
 .idea
 .vscode/*
 !.vscode/extensions.json
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/

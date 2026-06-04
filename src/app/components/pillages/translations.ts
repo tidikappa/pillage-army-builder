@@ -133,6 +133,16 @@ export const translations: Record<Language, any> = {
       forkInBuilder: "Importer dans le builder",
       forkPrefix: "Copie de",
       forkLoaded: "Liste importée. Modifie-la et sauvegarde-la comme la tienne.",
+
+      // Report a list
+      reportTitle: "Signaler cette liste",
+      reportDescription: "Si cette liste contient des insultes ou un contenu inapproprié, signale-la. Un modérateur sera notifié par email.",
+      reportArmyLabel: "Liste",
+      reportReasonLabel: "Motif (facultatif)",
+      reportReasonPlaceholder: "Décris brièvement ce qui pose problème...",
+      reportSubmit: "Envoyer le signalement",
+      reportSent: "Signalement envoyé, merci. Un modérateur va vérifier.",
+      reportAlready: "Tu as déjà signalé cette liste.",
       err_tooManyShooters: "Trop de tireurs à pied ($1). Limite : $2 ($4% de $3 figurines).",
       err_tooManyCavalry: "Trop de cavaliers ($1). Limite: $2 (25% de $3 figurines).",
       err_recruitUniqueTalent: "Impossible de recruter plusieurs unités avec des talents uniques simultanément.",
@@ -273,6 +283,16 @@ export const translations: Record<Language, any> = {
       forkInBuilder: "Open in builder",
       forkPrefix: "Copy of",
       forkLoaded: "List imported. Edit it and save as your own.",
+
+      // Report a list
+      reportTitle: "Report this list",
+      reportDescription: "If this list contains insults or inappropriate content, report it. A moderator will be notified by email.",
+      reportArmyLabel: "List",
+      reportReasonLabel: "Reason (optional)",
+      reportReasonPlaceholder: "Briefly describe what's wrong...",
+      reportSubmit: "Send report",
+      reportSent: "Report sent, thanks. A moderator will review it.",
+      reportAlready: "You already reported this list.",
       err_tooManyShooters: "Too many foot shooters ($1). Limit: $2 ($4% of $3 models).",
       err_tooManyCavalry: "Too many cavalry ($1). Limit: $2 (25% of $3 models).",
       err_recruitUniqueTalent: "Cannot recruit multiple units with unique talents simultaneously.",
