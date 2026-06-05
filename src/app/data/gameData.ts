@@ -260,12 +260,12 @@ const saxonTalents: Equipment[] = [
 ];
 
 const irishSpecificTalents: Equipment[] = [
-   { 
-    id: 'talent_dog_handler', 
-    name: 'Éducateur canin', 
-    type: 'talent', 
-    icon: PawPrint, 
-    costs: c('-', '10 po', '-', '-', '-', '-'),
+   {
+    id: 'talent_dog_handler',
+    name: 'Éducateur canin',
+    type: 'talent',
+    icon: PawPrint,
+    costs: c('-', 'Gratuit', '-', '-', '-', '-'),
     description: "Vos maîtres-chiens possèdent non pas 3 mais 4 chiens. (Coût: 10 po par unité de maître-chien)."
   }
 ];
