@@ -829,13 +829,18 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                 `}
                             >
                                 <div className="flex items-center gap-3">
-                                    <Checkbox 
-                                        id={eq.id} 
+                                    <Checkbox
+                                        id={eq.id}
                                         checked={isChecked}
                                         className="border-stone-600 data-[state=checked]:bg-amber-600 data-[state=checked]:border-amber-600 pointer-events-none"
                                     />
                                     <Label htmlFor={eq.id} className="cursor-pointer font-medium text-stone-300 pointer-events-none">
                                         {equipName}
+                                        {eq.id === WAR_DOGS_EQUIPMENT_ID && dogHandlerActive && (
+                                          <span className="block text-[10px] uppercase tracking-wider text-amber-400 font-bold mt-0.5">
+                                            +{DOG_HANDLER_BONUS_PER_MODEL} po · éducateur canin
+                                          </span>
+                                        )}
                                     </Label>
                                 </div>
                                 <span className={`text-xs font-bold font-mono ${isChecked ? "text-amber-400" : "text-stone-600"}`}>{cost > 0 ? `+${cost}` : '0'}</span>
@@ -931,6 +936,11 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         <span className={`text-2xl font-bold font-['UnifrakturCook'] ${canAfford ? 'text-[#cc6512]' : 'text-red-500'}`}>
                             {totalCost} PO
                         </span>
+                        {dogHandlerActive && selectedEquipment.includes(WAR_DOGS_EQUIPMENT_ID) && (
+                          <span className="text-[10px] uppercase tracking-wider text-amber-500 font-bold mt-0.5">
+                            +{DOG_HANDLER_BONUS_PER_MODEL * quantity} po · éducateur canin
+                          </span>
+                        )}
                         </div>
                     </div>
                     

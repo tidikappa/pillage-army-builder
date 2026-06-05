@@ -93,12 +93,31 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
       <div className="flex items-center gap-2 text-xs font-medium text-stone-600 py-0.5">
         <Icon className="w-3.5 h-3.5 shrink-0 text-stone-500" />
         <span className="tracking-wide uppercase">
-            {items.map(e => {
+            {items.map((e, idx) => {
                 const cost = e.costs[unitType.id as UnitRole];
                 const eName = tData('equipment', e.id, e.name);
-                const dogSuffix = e.id === 'spec_dogs' ? ` ×${dogHandlerActive ? 4 : 3}` : '';
-                return `${eName}${dogSuffix}${cost ? ` (${cost} po)` : ''}`;
-            }).join(", ")}
+                const isDogs = e.id === 'spec_dogs';
+                const dogSuffix = isDogs ? ` ×${dogHandlerActive ? 4 : 3}` : '';
+                const dogBonus = isDogs && dogHandlerActive;
+                return (
+                  <React.Fragment key={e.id}>
+                    {idx > 0 && ", "}
+                    {eName}{dogSuffix}
+                    {cost ? (
+                      <>
+                        {" ("}
+                        {cost} po
+                        {dogBonus && (
+                          <span className="text-amber-600 normal-case font-bold">
+                            {" +"}{DOG_HANDLER_BONUS_PER_MODEL} po éducateur canin
+                          </span>
+                        )}
+                        {")"}
+                      </>
+                    ) : null}
+                  </React.Fragment>
+                );
+            })}
         </span>
       </div>
     );
@@ -287,6 +306,11 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                     </span>
                   )}
                 </div>
+                {dogHandlerActive && unitCarriesWarDogs(unit) && (
+                  <span className="text-[10px] uppercase tracking-wider text-amber-600 font-bold mt-0.5">
+                    +{DOG_HANDLER_BONUS_PER_MODEL * quantity} po · éducateur canin
+                  </span>
+                )}
             </div>
             
             <div className="flex items-center gap-3">

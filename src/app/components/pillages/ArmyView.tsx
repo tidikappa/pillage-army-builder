@@ -124,10 +124,17 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
                         )}
                         <span className="text-stone-500 shrink-0">×{qty}</span>
                       </div>
-                      <div className="text-sm text-[#cc6512] font-bold shrink-0">
-                        {singleCost * qty} po
-                        {qty > 1 && (
-                          <span className="text-[10px] font-mono text-stone-400 ml-1">({singleCost}/u)</span>
+                      <div className="text-sm text-[#cc6512] font-bold shrink-0 text-right">
+                        <div>
+                          {singleCost * qty} po
+                          {qty > 1 && (
+                            <span className="text-[10px] font-mono text-stone-400 ml-1">({singleCost}/u)</span>
+                          )}
+                        </div>
+                        {dogHandlerActive && unitCarriesWarDogs(unit) && (
+                          <div className="text-[10px] uppercase tracking-wider text-amber-400 font-bold mt-0.5">
+                            +{DOG_HANDLER_BONUS_PER_MODEL * qty} po · éducateur canin
+                          </div>
                         )}
                       </div>
                     </div>
