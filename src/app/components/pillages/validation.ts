@@ -1,4 +1,12 @@
-import { ArmyUnit, Faction, UnitRole, getEffectiveFaction } from "../../data/gameData";
+import {
+  ArmyUnit,
+  Faction,
+  UnitRole,
+  getEffectiveFaction,
+  armyHasDogHandlerTalent,
+  unitCarriesWarDogs,
+  DOG_HANDLER_BONUS_PER_MODEL,
+} from "../../data/gameData";
 
 type Translator = (key: string) => string;
 
@@ -20,6 +28,7 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
   let mercenaryWarlord = false;
   const usedTalents = new Set<string>();
 
+  const hasDogHandler = armyHasDogHandlerTalent(army);
   const computeUnitCost = (unit: ArmyUnit): number => {
     const eff = getEffectiveFaction(unit, faction);
     const ut = eff.units.find((u) => u.id === unit.unitTypeId);
@@ -32,6 +41,10 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
         if (c !== null && c !== undefined) cost += c as number;
       }
     });
+    // "Éducateur canin" talent : +10 po per model carrying War Dogs.
+    if (hasDogHandler && unitCarriesWarDogs(unit)) {
+      cost += DOG_HANDLER_BONUS_PER_MODEL;
+    }
     return cost;
   };
 

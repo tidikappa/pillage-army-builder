@@ -1,5 +1,14 @@
 import React from "react";
-import { factions, ArmyUnit, UnitRole, Equipment, getEffectiveFaction } from "../../data/gameData";
+import {
+  factions,
+  ArmyUnit,
+  UnitRole,
+  Equipment,
+  getEffectiveFaction,
+  armyHasDogHandlerTalent,
+  unitCarriesWarDogs,
+  DOG_HANDLER_BONUS_PER_MODEL,
+} from "../../data/gameData";
 import { Card, CardContent } from "../ui/card";
 import { Shield, Sword, Crosshair, Zap, Sparkles, ShieldAlert } from "lucide-react";
 import { useTranslation } from "./TranslationContext";
@@ -20,7 +29,7 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
     return <p className="text-stone-400">Faction inconnue : {factionId}</p>;
   }
 
-  const dogHandlerActive = units.some((u) => u.equipment.includes("talent_dog_handler"));
+  const dogHandlerActive = armyHasDogHandlerTalent(units);
 
   const total = units.reduce((sum, unit) => {
     const effective = getEffectiveFaction(unit, faction);
@@ -31,6 +40,9 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
       const eq = effective.availableEquipment.find((e) => e.id === eqId);
       if (eq) cost += eq.costs[unit.unitTypeId as UnitRole] ?? 0;
     });
+    if (dogHandlerActive && unitCarriesWarDogs(unit)) {
+      cost += DOG_HANDLER_BONUS_PER_MODEL;
+    }
     return sum + cost * (unit.quantity || 1);
   }, 0);
 
@@ -91,7 +103,8 @@ export function ArmyView({ factionId, budget, units }: ArmyViewProps) {
               .filter(Boolean) as Equipment[];
             const singleCost =
               ut.baseCost +
-              equipment.reduce((s, e) => s + (e.costs[unit.unitTypeId as UnitRole] ?? 0), 0);
+              equipment.reduce((s, e) => s + (e.costs[unit.unitTypeId as UnitRole] ?? 0), 0) +
+              (dogHandlerActive && unitCarriesWarDogs(unit) ? DOG_HANDLER_BONUS_PER_MODEL : 0);
             const qty = unit.quantity || 1;
 
             const UnitIcon = getUnitDisplayIcon(unit, effective);

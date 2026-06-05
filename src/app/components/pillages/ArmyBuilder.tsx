@@ -1,7 +1,18 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { factions, ArmyUnit, Faction, UnitRole, getEffectiveFaction, Supplement, SUPPLEMENT_LABELS } from "../../data/gameData";
+import {
+  factions,
+  ArmyUnit,
+  Faction,
+  UnitRole,
+  getEffectiveFaction,
+  Supplement,
+  SUPPLEMENT_LABELS,
+  armyHasDogHandlerTalent,
+  unitCarriesWarDogs,
+  DOG_HANDLER_BONUS_PER_MODEL,
+} from "../../data/gameData";
 import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
 import { validateArmy } from "./validation";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../ui/select";
@@ -60,6 +71,8 @@ export function ArmyBuilder() {
 
   const selectedFaction = factions.find(f => f.id === selectedFactionId);
 
+  const hasDogHandler = armyHasDogHandlerTalent(army);
+
   const computeUnitCost = (unit: ArmyUnit): number => {
     if (!selectedFaction) return 0;
     const effective = getEffectiveFaction(unit, selectedFaction);
@@ -73,6 +86,10 @@ export function ArmyBuilder() {
         if (eqCost !== null && eqCost !== undefined) cost += eqCost as number;
       }
     });
+    // "Éducateur canin" talent : +10 po per model carrying War Dogs.
+    if (hasDogHandler && unitCarriesWarDogs(unit)) {
+      cost += DOG_HANDLER_BONUS_PER_MODEL;
+    }
     return cost;
   };
 
@@ -821,7 +838,7 @@ export function ArmyBuilder() {
                       onMoveDown={(id) => handleMoveUnit(id, 1)}
                       canMoveUp={idx > 0}
                       canMoveDown={idx < army.length - 1}
-                      dogHandlerActive={army.some(u => u.equipment.includes('talent_dog_handler'))}
+                      dogHandlerActive={hasDogHandler}
                       army={army}
                       />
                   ))}

@@ -5,7 +5,16 @@ import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { Checkbox } from "../ui/checkbox";
-import { Faction, UnitType, Equipment, UnitRole, factions as allFactions } from "../../data/gameData";
+import {
+  Faction,
+  UnitType,
+  Equipment,
+  UnitRole,
+  factions as allFactions,
+  DOG_HANDLER_TALENT_ID,
+  WAR_DOGS_EQUIPMENT_ID,
+  DOG_HANDLER_BONUS_PER_MODEL,
+} from "../../data/gameData";
 
 /**
  * Resolves cross-rule equipment conflicts. The user's most recent action
@@ -484,6 +493,18 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
     });
   };
 
+  // "Éducateur canin" talent : if a warlord in the army carries it (either an
+  // existing unit other than the one being edited, or the current draft itself
+  // when editing a warlord), every model with War Dogs costs 10 more po.
+  const dogHandlerActive = React.useMemo(() => {
+    const onCurrentDraft = selectedEquipment.includes(DOG_HANDLER_TALENT_ID);
+    const editingId = unitToEdit?.instanceId;
+    const onOtherUnit = army.some(
+      (u) => u.instanceId !== editingId && u.equipment.includes(DOG_HANDLER_TALENT_ID)
+    );
+    return onCurrentDraft || onOtherUnit;
+  }, [army, selectedEquipment, unitToEdit?.instanceId]);
+
   const calculateCurrentCost = () => {
     if (!selectedUnit) return 0;
     let cost = selectedUnit.baseCost;
@@ -494,6 +515,9 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         if (eqCost !== null) cost += eqCost;
       }
     });
+    if (dogHandlerActive && selectedEquipment.includes(WAR_DOGS_EQUIPMENT_ID)) {
+      cost += DOG_HANDLER_BONUS_PER_MODEL;
+    }
     return cost;
   };
 

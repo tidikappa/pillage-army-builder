@@ -3,7 +3,15 @@ import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
-import { ArmyUnit, Faction, Equipment, UnitRole, getEffectiveFaction } from "../../data/gameData";
+import {
+  ArmyUnit,
+  Faction,
+  Equipment,
+  UnitRole,
+  getEffectiveFaction,
+  unitCarriesWarDogs,
+  DOG_HANDLER_BONUS_PER_MODEL,
+} from "../../data/gameData";
 import { useTranslation } from "./TranslationContext";
 import { UnitForm } from "./UnitForm";
 import { getUnitDisplayName, getUnitDisplayIcon, ICON_REGISTRY } from "./unitNaming";
@@ -52,10 +60,13 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
 
   const equipment = getEquipment(unit.equipment);
 
-  const singleUnitCost = unitType.baseCost + equipment.reduce((sum, e) => {
-    const cost = e.costs[unitType.id as UnitRole];
-    return sum + (cost || 0);
-  }, 0);
+  const singleUnitCost =
+    unitType.baseCost +
+    equipment.reduce((sum, e) => {
+      const cost = e.costs[unitType.id as UnitRole];
+      return sum + (cost || 0);
+    }, 0) +
+    (dogHandlerActive && unitCarriesWarDogs(unit) ? DOG_HANDLER_BONUS_PER_MODEL : 0);
 
   const quantity = unit.quantity || 1;
   const totalCost = singleUnitCost * quantity;

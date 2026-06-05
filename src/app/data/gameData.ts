@@ -1026,3 +1026,20 @@ export function getEffectiveFaction(unit: ArmyUnit, mainFaction: Faction): Facti
   if (!unit.sourceFactionId || unit.sourceFactionId === mainFaction.id) return mainFaction;
   return factions.find((f) => f.id === unit.sourceFactionId) ?? mainFaction;
 }
+
+/**
+ * "Éducateur canin" talent : as soon as one warlord in the army carries this
+ * talent, every model equipped with War Dogs costs 10 extra po. The talent is
+ * an irish-specific equipment id stored in `equipment[]` of a warlord unit.
+ */
+export const DOG_HANDLER_TALENT_ID = 'talent_dog_handler';
+export const WAR_DOGS_EQUIPMENT_ID = 'spec_dogs';
+export const DOG_HANDLER_BONUS_PER_MODEL = 10;
+
+export function armyHasDogHandlerTalent(army: ArmyUnit[]): boolean {
+  return army.some((u) => u.equipment.includes(DOG_HANDLER_TALENT_ID));
+}
+
+export function unitCarriesWarDogs(unit: ArmyUnit): boolean {
+  return unit.equipment.includes(WAR_DOGS_EQUIPMENT_ID);
+}
