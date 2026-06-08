@@ -677,24 +677,6 @@ export function ArmyBuilder() {
       {selectedFaction && (
         <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
 
-          {/* Global Validation Errors */}
-          {validationErrors.length > 0 && army.length > 0 && (
-             <div 
-               className="shadow-[0_0_20px_rgba(220,38,38,0.1)] p-6 min-h-[100px] flex flex-col justify-center"
-               style={{ backgroundImage: `url(${redBanner})`, backgroundSize: '100% 100%' }}
-             >
-               <div className="flex items-center gap-2 mb-2 px-2">
-                  <ShieldAlert className="h-5 w-5 text-white drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]" />
-                  <h4 className="font-serif font-bold tracking-wider text-white uppercase">{t('restrictionsViolated')}</h4>
-               </div>
-               <ul className="list-disc pl-9 space-y-1.5 text-sm font-medium text-white px-2">
-                 {validationErrors.map((error, idx) => (
-                   <li key={idx}>{error}</li>
-                 ))}
-               </ul>
-             </div>
-          )}
-          
           {/* Special Rules Banner — torn-paper parchment with solid teal middle */}
           {selectedFaction.specialRules.length > 0 && (
              <>
@@ -757,6 +739,25 @@ export function ArmyBuilder() {
                  <img src={spearSeparator} alt="Separator" className="w-full max-w-2xl opacity-80" />
                </div>
              </>
+          )}
+
+          {/* Validation errors panel, just above "Votre armée" so the player
+              sees it next to the army he's editing. */}
+          {validationErrors.length > 0 && army.length > 0 && (
+             <div
+               className="shadow-[0_0_20px_rgba(220,38,38,0.1)] p-6 min-h-[100px] flex flex-col justify-center"
+               style={{ backgroundImage: `url(${redBanner})`, backgroundSize: '100% 100%' }}
+             >
+               <div className="flex items-center gap-2 mb-2 px-2">
+                  <ShieldAlert className="h-5 w-5 text-white drop-shadow-[0_0_5px_rgba(220,38,38,0.8)]" />
+                  <h4 className="font-serif font-bold tracking-wider text-white uppercase">{t('restrictionsViolated')}</h4>
+               </div>
+               <ul className="list-disc pl-9 space-y-1.5 text-sm font-medium text-white px-2">
+                 {validationErrors.map((error, idx) => (
+                   <li key={idx}>{error}</li>
+                 ))}
+               </ul>
+             </div>
           )}
 
           {/* Toolbar */}
