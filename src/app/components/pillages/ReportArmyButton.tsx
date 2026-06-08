@@ -1,6 +1,7 @@
 import React from "react";
 import { Flag } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { supabase, isSupabaseConfigured, SavedArmy } from "../../lib/supabase";
 import { useAuth } from "../../lib/AuthContext";
 import { useTranslation } from "./TranslationContext";
@@ -45,6 +46,7 @@ function markLocallyReported(armyId: string) {
 export function ReportArmyButton({ army }: { army: SavedArmy }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -91,6 +93,12 @@ export function ReportArmyButton({ army }: { army: SavedArmy }) {
         onClick={() => {
           if (alreadyReported) {
             toast.info(t("reportAlready"));
+            return;
+          }
+          if (!user) {
+            // Reporting now requires authentication (RLS restricted to
+            // authenticated users to prevent anonymous spam).
+            navigate("/login", { state: { from: "/galerie" } });
             return;
           }
           setOpen(true);

@@ -327,15 +327,12 @@ create unique index army_reports_unique_per_user
 
 alter table public.army_reports enable row level security;
 
--- Insert ouvert à tous (anon + authenticated). reporter_user_id doit être
--- soit NULL (anonyme), soit l'ID du caller (pas d'usurpation).
-create policy "Anyone can report a public army"
+-- Insert limité aux comptes connectés (anti-spam anonyme). Le reporter_user_id
+-- doit obligatoirement correspondre à l'ID du caller (pas d'usurpation).
+create policy "Authenticated users can report"
   on public.army_reports for insert
-  to anon, authenticated
-  with check (
-    reporter_user_id is null
-    or reporter_user_id = auth.uid()
-  );
+  to authenticated
+  with check (reporter_user_id = auth.uid());
 
 -- Lecture / update / delete réservés aux admins.
 create policy "Admins can read reports"
@@ -375,11 +372,15 @@ supabase login
 supabase link --project-ref <ton-project-ref>
 ```
 
-Ajoute les secrets nécessaires :
+Génère un secret partagé qui protège l'Edge Function contre tout appel
+direct non autorisé, et ajoute les secrets :
 
 ```bash
+WEBHOOK_SECRET=$(openssl rand -hex 32)
 supabase secrets set DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..."
 supabase secrets set APP_BASE_URL=https://pillage-army-builder.vercel.app
+supabase secrets set WEBHOOK_SECRET="$WEBHOOK_SECRET"
+echo "WEBHOOK_SECRET=$WEBHOOK_SECRET  ← à coller dans le Database Webhook"
 ```
 
 Puis déploie :
@@ -400,10 +401,12 @@ Dans Supabase Dashboard → **Database → Webhooks → Create a new hook** :
 - Events : cocher **Insert** uniquement
 - Type : **Supabase Edge Functions**
 - Edge Function : `notify-report`
-- HTTP Headers : laisser par défaut (Supabase ajoute son token interne)
+- HTTP Headers : ajouter `x-webhook-secret` avec la valeur de `WEBHOOK_SECRET`
+  générée à l'étape précédente
 
 Sauvegarde. Désormais, chaque insertion dans `army_reports` déclenche
-l'envoi de la notification Discord.
+l'envoi de la notification Discord. Tout appel direct sans le header
+(scanner, replay, curl) est rejeté en 401.
 
 ### e. Test rapide
 

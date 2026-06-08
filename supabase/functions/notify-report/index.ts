@@ -8,6 +8,9 @@
 // (Project Settings > Edge Functions > Secrets) :
 //   - DISCORD_WEBHOOK_URL  URL complète du webhook Discord
 //                          (https://discord.com/api/webhooks/.../...)
+//   - WEBHOOK_SECRET       chaîne aléatoire partagée. Le Database Webhook
+//                          doit envoyer un header `x-webhook-secret` avec
+//                          cette même valeur, sinon l'appel est rejeté.
 //   - APP_BASE_URL         (optionnel) base URL prod, ex:
 //                          https://pillage-army-builder.vercel.app
 //
@@ -18,6 +21,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const DISCORD_WEBHOOK_URL = Deno.env.get("DISCORD_WEBHOOK_URL");
+const WEBHOOK_SECRET = Deno.env.get("WEBHOOK_SECRET");
 const APP_BASE_URL = Deno.env.get("APP_BASE_URL") ?? "https://pillage-army-builder.vercel.app";
 
 // Utilise la service role key pour pouvoir lire auth.users et armies sans
@@ -39,6 +43,16 @@ Deno.serve(async (req) => {
   }
   if (!DISCORD_WEBHOOK_URL) {
     return new Response("DISCORD_WEBHOOK_URL missing", { status: 500 });
+  }
+  if (!WEBHOOK_SECRET) {
+    return new Response("WEBHOOK_SECRET missing", { status: 500 });
+  }
+
+  // Shared-secret gate. The Database Webhook injects this header, anything
+  // else (curl, scanner, replay) is rejected.
+  const provided = req.headers.get("x-webhook-secret");
+  if (provided !== WEBHOOK_SECRET) {
+    return new Response("Unauthorized", { status: 401 });
   }
 
   let payload: any;
