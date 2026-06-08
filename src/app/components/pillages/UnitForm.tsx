@@ -130,6 +130,7 @@ import { Plus, Minus, Shield, Sword, Crosshair, Zap, Sparkles, X } from "lucide-
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useTranslation } from "./TranslationContext";
+import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
@@ -161,7 +162,7 @@ interface UnitFormProps {
 }
 
 export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen: externalIsOpen, onOpenChange, editMode = false, unitToEdit, army = [] }: UnitFormProps) {
-  const { t, tData } = useTranslation();
+  const { t, tData, language } = useTranslation();
   const [selectedUnitId, setSelectedUnitId] = React.useState<string>("");
   const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
   const [quantity, setQuantity] = React.useState(1);
@@ -582,6 +583,32 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                 {t('recruitDescription')}
             </DialogDescription>
             </DialogHeader>
+
+            {/* Compact roster of units already in the army */}
+            {army.length > 0 && (
+              <div className="shrink-0 mt-3 px-3 py-2 bg-black/30 border border-white/5 rounded-none">
+                <div className="text-[10px] uppercase tracking-widest text-stone-500 font-bold mb-1.5">
+                  {t('currentRosterLabel')}
+                </div>
+                <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
+                  {army.map((u) => {
+                    const ef = u.sourceFactionId && u.sourceFactionId !== faction.id
+                      ? (allFactions.find(f => f.id === u.sourceFactionId) ?? faction)
+                      : faction;
+                    const Icon = getUnitDisplayIcon(u, ef);
+                    const name = getUnitDisplayName(u, ef, language, tData);
+                    const qty = u.quantity || 1;
+                    return (
+                      <li key={u.instanceId} className="inline-flex items-center gap-1.5 text-xs text-stone-300">
+                        <Icon className="w-3.5 h-3.5 text-[#cc6512] shrink-0" />
+                        <span className="font-serif truncate max-w-[160px]">{name}</span>
+                        <span className="text-stone-500 font-mono">×{qty}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             
             <div className="flex-1 overflow-y-auto pt-2 custom-scrollbar">
             <div className="space-y-10 pb-10">

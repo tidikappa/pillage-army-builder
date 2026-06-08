@@ -143,6 +143,9 @@ export const translations: Record<Language, any> = {
       reportSubmit: "Envoyer le signalement",
       reportSent: "Signalement envoyé, merci. Un modérateur va vérifier.",
       reportAlready: "Tu as déjà signalé cette liste.",
+
+      // Recruit dialog : current roster banner
+      currentRosterLabel: "Déjà dans votre armée",
       err_tooManyShooters: "Trop de tireurs à pied ($1). Limite : $2 ($4% de $3 figurines).",
       err_tooManyCavalry: "Trop de cavaliers ($1). Limite: $2 (25% de $3 figurines).",
       err_recruitUniqueTalent: "Impossible de recruter plusieurs unités avec des talents uniques simultanément.",
@@ -293,6 +296,9 @@ export const translations: Record<Language, any> = {
       reportSubmit: "Send report",
       reportSent: "Report sent, thanks. A moderator will review it.",
       reportAlready: "You already reported this list.",
+
+      // Recruit dialog : current roster banner
+      currentRosterLabel: "Already in your army",
       err_tooManyShooters: "Too many foot shooters ($1). Limit: $2 ($4% of $3 models).",
       err_tooManyCavalry: "Too many cavalry ($1). Limit: $2 (25% of $3 models).",
       err_recruitUniqueTalent: "Cannot recruit multiple units with unique talents simultaneously.",

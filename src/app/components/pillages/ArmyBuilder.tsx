@@ -800,27 +800,30 @@ export function ArmyBuilder() {
             </div>
           </div>
 
-          {/* Recruitment Button (Moved Here) */}
-          <div className="mb-8 drop-shadow-xl">
-            <UnitForm
-              faction={selectedFaction}
-              onAddUnit={handleAddUnit}
-              currentPoints={currentPoints}
-              maxPoints={budget}
-              army={army}
-            />
-          </div>
-
           {/* Unit List Grid */}
           <div className="space-y-4 min-h-[200px]">
             {army.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 rounded-none border-2 border-dashed border-white/5 bg-white/[0.02]">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#1c1917] to-black flex items-center justify-center mb-6 border border-white/5 shadow-inner">
-                    <ShieldAlert className="w-8 h-8 text-stone-700" />
+              <>
+                {/* Recruitment button : above the empty state to drive the
+                    first action. Once the army has units, the button moves
+                    below the list (see further down). */}
+                <div className="drop-shadow-xl">
+                  <UnitForm
+                    faction={selectedFaction}
+                    onAddUnit={handleAddUnit}
+                    currentPoints={currentPoints}
+                    maxPoints={budget}
+                    army={army}
+                  />
                 </div>
-                <p className="text-2xl font-serif text-stone-500 mb-2 tracking-wide">{t('emptyStateTitle')}</p>
-                <p className="text-stone-600 text-sm font-medium uppercase tracking-widest">{t('emptyStateSubtitle')}</p>
-              </div>
+                <div className="flex flex-col items-center justify-center py-24 rounded-none border-2 border-dashed border-white/5 bg-white/[0.02]">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#1c1917] to-black flex items-center justify-center mb-6 border border-white/5 shadow-inner">
+                      <ShieldAlert className="w-8 h-8 text-stone-700" />
+                  </div>
+                  <p className="text-2xl font-serif text-stone-500 mb-2 tracking-wide">{t('emptyStateTitle')}</p>
+                  <p className="text-stone-600 text-sm font-medium uppercase tracking-widest">{t('emptyStateSubtitle')}</p>
+                </div>
+              </>
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4">
@@ -897,6 +900,20 @@ export function ArmyBuilder() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Recruitment button : under the list once the army has units,
+                so the user doesn't have to scroll back up to add more. */}
+            {army.length > 0 && (
+              <div className="mt-6 drop-shadow-xl">
+                <UnitForm
+                  faction={selectedFaction}
+                  onAddUnit={handleAddUnit}
+                  currentPoints={currentPoints}
+                  maxPoints={budget}
+                  army={army}
+                />
+              </div>
             )}
           </div>
 
