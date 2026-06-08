@@ -80,12 +80,12 @@ export function validateArmy(army: ArmyUnit[], faction: Faction, t: Translator):
     let hasHorn = false;
 
     items.forEach((eq) => {
-      // Defensive : melee weapons (mel_*) are never shooters, even if a
-      // future entry gets miscategorised. "ran_none" stays excluded.
-      const isMeleeId = typeof eq?.id === "string" && eq.id.startsWith("mel_");
-      if (eq?.type === "ranged" && eq.id !== "ran_none" && !isMeleeId) {
-        isShooter = true;
-      }
+      // Rule wording : Hasta is a melee weapon for equipment purposes but
+      // counts as a ranged weapon for the shooter cap (25% / 50%).
+      const countsAsRanged =
+        (eq?.type === "ranged" && eq.id !== "ran_none") ||
+        eq?.id === "mel_hasta";
+      if (countsAsRanged) isShooter = true;
       if (eq?.id === "spec_horse") isCavalry = true;
       if (eq?.id === "spec_banner") hasBanner = true;
       if (eq?.id === "spec_horn") hasHorn = true;
