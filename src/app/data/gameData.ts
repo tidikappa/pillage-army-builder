@@ -1004,11 +1004,18 @@ export interface ArmyUnit {
   quantity: number;
   customName?: string;
   /**
-   * For mercenary recruitment (Byzantine rule). When set, this unit comes
-   * from another faction; its baseCost / equipment / specialization are
-   * resolved against that faction instead of the army's main faction.
+   * For mercenary / ally recruitment. When set, this unit comes from another
+   * faction; its baseCost / equipment / specialization are resolved against
+   * that faction instead of the army's main faction. Used by the Byzantine
+   * mercenary rule and by the Roman Foederati talent.
    */
   sourceFactionId?: string;
+  /**
+   * Roman "Foederati" talent only: when a warlord carries the Foederati
+   * talent, this field stores the chosen ally faction id. The whole army
+   * shares the same ally (the first Foederati warlord pins it).
+   */
+  foederatiAllyId?: string;
   /**
    * Overrides the auto-derived icon. Value matches a key in ICON_REGISTRY
    * (see unitNaming.ts). When undefined, the icon is derived from the role
@@ -1042,4 +1049,35 @@ export function armyHasDogHandlerTalent(army: ArmyUnit[]): boolean {
 
 export function unitCarriesWarDogs(unit: ArmyUnit): boolean {
   return unit.equipment.includes(WAR_DOGS_EQUIPMENT_ID);
+}
+
+/**
+ * Roman "Foederati" talent : when a warlord carries this talent, the player
+ * picks one ally faction from the Finis Imperii supplement. Units from that
+ * faction (except warlords) become recruitable in the army. The ally id is
+ * pinned on the first Foederati warlord recruited; subsequent Foederati
+ * warlords inherit the same ally.
+ */
+export const FOEDERATI_TALENT_ID = 'talent_foederati';
+export const ROMAN_FACTION_IDS = ['romans'];
+
+export function unitHasFoederati(unit: ArmyUnit): boolean {
+  return unit.equipment.includes(FOEDERATI_TALENT_ID);
+}
+
+export function getFoederatiAllyId(army: ArmyUnit[]): string | null {
+  for (const u of army) {
+    if (unitHasFoederati(u) && u.foederatiAllyId) return u.foederatiAllyId;
+  }
+  return null;
+}
+
+/**
+ * Eligible ally factions for a Foederati Roman army : every Finis Imperii
+ * faction except Romans themselves.
+ */
+export function getFoederatiAllyCandidates(): Faction[] {
+  return factions.filter(
+    (f) => f.supplement === 'finis_imperii' && !ROMAN_FACTION_IDS.includes(f.id)
+  );
 }

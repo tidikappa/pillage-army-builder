@@ -28,7 +28,8 @@ interface UnitCardProps {
     unitTypeId: string,
     equipmentIds: string[],
     quantity: number,
-    sourceFactionId?: string
+    sourceFactionId?: string,
+    foederatiAllyId?: string,
   ) => void;
   onUpdateCustomName?: (instanceId: string, customName: string) => void;
   onUpdateCustomIcon?: (instanceId: string, customIconId: string | undefined) => void;
@@ -367,8 +368,8 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
         faction={faction}
         isOpen={isEditOpen}
         onOpenChange={setIsEditOpen}
-        onAddUnit={(unitTypeId, equipmentIds, qty, sourceFactionId) => {
-          onUpdateUnit(unit.instanceId, unitTypeId, equipmentIds, qty, sourceFactionId);
+        onAddUnit={(unitTypeId, equipmentIds, qty, sourceFactionId, foederatiAllyId) => {
+          onUpdateUnit(unit.instanceId, unitTypeId, equipmentIds, qty, sourceFactionId, foederatiAllyId);
           setIsEditOpen(false);
         }}
         editMode={true}
@@ -378,6 +379,7 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
           equipment: unit.equipment,
           quantity: unit.quantity,
           sourceFactionId: unit.sourceFactionId,
+          foederatiAllyId: unit.foederatiAllyId,
         }}
         currentPoints={0}
         maxPoints={999999}

@@ -14,6 +14,10 @@ import {
   DOG_HANDLER_TALENT_ID,
   WAR_DOGS_EQUIPMENT_ID,
   DOG_HANDLER_BONUS_PER_MODEL,
+  FOEDERATI_TALENT_ID,
+  ROMAN_FACTION_IDS,
+  getFoederatiAllyId,
+  getFoederatiAllyCandidates,
 } from "../../data/gameData";
 
 /**
@@ -131,6 +135,7 @@ import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useTranslation } from "./TranslationContext";
 import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
+import { toast } from "sonner";
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
@@ -140,7 +145,8 @@ interface UnitFormProps {
     unitTypeId: string,
     equipmentIds: string[],
     quantity: number,
-    sourceFactionId?: string
+    sourceFactionId?: string,
+    foederatiAllyId?: string,
   ) => void;
   currentPoints: number;
   maxPoints: number;
@@ -153,6 +159,7 @@ interface UnitFormProps {
     equipment: string[];
     quantity: number;
     sourceFactionId?: string;
+    foederatiAllyId?: string;
   };
   /**
    * Current army composition. Used for cross-unit rules like the Pict
@@ -169,6 +176,19 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   const [internalIsOpen, setInternalIsOpen] = React.useState(false);
   // When set, the user has chosen a mercenary from this other faction.
   const [mercFactionId, setMercFactionId] = React.useState<string | null>(null);
+  // Roman Foederati talent : ally faction id, set on the warlord that
+  // carries the Foederati talent. Pinned army-wide via getFoederatiAllyId.
+  const [foederatiAllyDraft, setFoederatiAllyDraft] = React.useState<string | null>(null);
+
+  // Ally already pinned by another warlord in the army, if any.
+  const lockedFoederatiAlly = React.useMemo(() => {
+    const editingId = unitToEdit?.instanceId;
+    const others = army.filter((u) => u.instanceId !== editingId);
+    return getFoederatiAllyId(others);
+  }, [army, unitToEdit?.instanceId]);
+
+  const isRomanArmy = ROMAN_FACTION_IDS.includes(faction.id);
+  const foederatiCandidates = React.useMemo(() => getFoederatiAllyCandidates(), []);
 
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const setIsOpen = onOpenChange || setInternalIsOpen;
@@ -220,6 +240,19 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
       );
   }, [faction.id]);
 
+  // Roman Foederati allies : when a warlord in the army carries Foederati,
+  // its chosen ally faction exposes every non-warlord unit for recruitment.
+  const foederatiAllies = React.useMemo(() => {
+    if (!isRomanArmy) return [];
+    const allyId = lockedFoederatiAlly;
+    if (!allyId) return [];
+    const ally = allFactions.find((f) => f.id === allyId);
+    if (!ally) return [];
+    return ally.units
+      .filter((u) => u.id !== "warlord")
+      .map((u) => ({ sourceFaction: ally, unit: u }));
+  }, [isRomanArmy, lockedFoederatiAlly]);
+
   // Reset form when opening
   React.useEffect(() => {
     if (isOpen) {
@@ -229,15 +262,17 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
         setSelectedEquipment(unitToEdit.equipment);
         setQuantity(unitToEdit.quantity);
         setMercFactionId(unitToEdit.sourceFactionId ?? null);
+        setFoederatiAllyDraft(unitToEdit.foederatiAllyId ?? lockedFoederatiAlly ?? null);
       } else {
         // Reset for new unit
         setSelectedUnitId("");
         setSelectedEquipment([]);
         setQuantity(1);
         setMercFactionId(null);
+        setFoederatiAllyDraft(lockedFoederatiAlly ?? null);
       }
     }
-  }, [isOpen, editMode, unitToEdit]);
+  }, [isOpen, editMode, unitToEdit, lockedFoederatiAlly]);
 
   // Scroll to options when unit is selected
   React.useEffect(() => {
@@ -527,11 +562,38 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   const remainingBudget = maxPoints - currentPoints;
   const canAfford = totalCost <= remainingBudget;
 
+  // Foederati gate: a Roman warlord that just ticked Foederati must pick an
+  // ally before the recruit can be confirmed (unless one is already locked
+  // army-wide by another warlord).
+  const needsFoederatiAlly =
+    isRomanArmy &&
+    selectedUnitId === "warlord" &&
+    selectedEquipment.includes(FOEDERATI_TALENT_ID) &&
+    !lockedFoederatiAlly &&
+    !foederatiAllyDraft;
+
   const handleSave = () => {
-    if (selectedUnitId) {
-      onAddUnit(selectedUnitId, selectedEquipment, quantity, mercFactionId ?? undefined);
-      setIsOpen(false);
+    if (!selectedUnitId) return;
+    if (needsFoederatiAlly) {
+      toast.error(t('foederatiAllyRequired'));
+      return;
     }
+    // Only the warlord that actually carries the Foederati talent persists
+    // the ally id. Other units / warlords don't need it.
+    const persistAlly =
+      isRomanArmy &&
+      selectedUnitId === "warlord" &&
+      selectedEquipment.includes(FOEDERATI_TALENT_ID)
+        ? foederatiAllyDraft ?? lockedFoederatiAlly ?? undefined
+        : undefined;
+    onAddUnit(
+      selectedUnitId,
+      selectedEquipment,
+      quantity,
+      mercFactionId ?? undefined,
+      persistAlly ?? undefined,
+    );
+    setIsOpen(false);
   };
 
   const handleUnitToggle = (unitId: string) => {
@@ -661,6 +723,52 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                     })}
                 </div>
                 </div>
+
+                {foederatiAllies.length > 0 && (
+                  <div className="space-y-4">
+                    <Label className="text-xs font-bold uppercase tracking-[0.15em] text-stone-500 pl-1">
+                      {t('foederatiAllyLabel').replace('$1', tData('factions', foederatiAllies[0].sourceFaction.id, foederatiAllies[0].sourceFaction.name))}
+                    </Label>
+                    <p className="text-xs text-stone-500 pl-1 -mt-2">
+                      {t('foederatiAllyHint')}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {foederatiAllies.map(({ sourceFaction, unit }) => {
+                        const Icon = unit.icon;
+                        const isSelected = selectedUnitId === unit.id && mercFactionId === sourceFaction.id;
+                        const unitName = tData("roles", unit.id, unit.name);
+                        const factionName = tData("factions", sourceFaction.id, sourceFaction.name);
+                        return (
+                          <button
+                            key={`foed_${sourceFaction.id}_${unit.id}`}
+                            type="button"
+                            onClick={() => handleMercToggle(sourceFaction.id, unit.id)}
+                            className={`
+                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-all duration-300 focus:outline-none
+                              ${isSelected
+                                ? "border-amber-500/60 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.18)] scale-[1.02]"
+                                : "border-white/5 hover:border-amber-500/30 bg-[#1c1917]/60 hover:bg-[#2c2525]/60"}
+                            `}
+                          >
+                            <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border ${isSelected ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-black/30 border-white/10 text-stone-500 group-hover:text-stone-300"}`}>
+                              {factionName}
+                            </span>
+                            <div className={`p-3 rounded-none transition-all duration-500 ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
+                              <Icon className={`w-7 h-7 transition-colors duration-300 ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
+                            </div>
+                            <span className={`font-serif font-bold text-sm uppercase tracking-wider text-center transition-colors ${isSelected ? "text-amber-300" : "text-stone-400 group-hover:text-stone-200"}`}>
+                              {unitName}
+                            </span>
+                            <div className={`mt-auto text-xs font-bold px-2 py-0.5 rounded-none ${isSelected ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "text-stone-600 bg-black/20"}`}>
+                              {unit.baseCost} PTS
+                            </div>
+                            {isSelected && <div className="absolute inset-0 rounded-none border-2 border-amber-500/30 pointer-events-none" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {mercenaries.length > 0 && (
                   <div className="space-y-4">
@@ -925,6 +1033,40 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                 <p className="text-xs text-stone-500 pl-7 leading-relaxed">
                                     {talentDesc}
                                 </p>
+                                {eq.id === FOEDERATI_TALENT_ID && isSelected && isRomanArmy && (
+                                  <div
+                                    className="mt-3 pl-7"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Label className="text-[10px] uppercase tracking-widest font-bold text-purple-300 mb-1 block">
+                                      {t('foederatiSelectLabel')}
+                                    </Label>
+                                    {lockedFoederatiAlly ? (
+                                      <div className="px-3 py-2 bg-black/30 border border-purple-500/30 text-stone-300 text-sm">
+                                        {tData('factions', lockedFoederatiAlly, lockedFoederatiAlly)}
+                                        <span className="ml-2 text-[10px] uppercase tracking-widest text-stone-500">
+                                          {t('foederatiAllyLocked')}
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <Select
+                                        value={foederatiAllyDraft ?? ''}
+                                        onValueChange={(v) => setFoederatiAllyDraft(v)}
+                                      >
+                                        <SelectTrigger className="h-10 bg-black/30 border-purple-500/30 text-stone-200 rounded-none">
+                                          <SelectValue placeholder={t('foederatiSelectPlaceholder')} />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1c1917] border-purple-500/30 text-stone-200 rounded-none">
+                                          {foederatiCandidates.map((f) => (
+                                            <SelectItem key={f.id} value={f.id} className="focus:bg-purple-500/20 cursor-pointer">
+                                              {tData('factions', f.id, f.name)}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  </div>
+                                )}
                                 </div>
                             );
                             })}
@@ -974,7 +1116,8 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                     <div className="flex gap-3">
                         <Button
                         onClick={handleSave}
-                        className="rounded-none px-8 font-bold tracking-wider shadow-lg transition-all bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-105"
+                        disabled={needsFoederatiAlly}
+                        className="rounded-none px-8 font-bold tracking-wider shadow-lg transition-all bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                         {t('recruit')}
                         </Button>
@@ -983,6 +1126,11 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                 {!canAfford && (
                     <p className="text-center text-xs text-red-500 font-bold uppercase tracking-widest">
                         {t('insufficientBudget')}
+                    </p>
+                )}
+                {needsFoederatiAlly && (
+                    <p className="text-center text-xs text-purple-300 font-bold uppercase tracking-widest">
+                        {t('foederatiAllyRequired')}
                     </p>
                 )}
             </div>

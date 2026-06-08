@@ -146,6 +146,14 @@ export const translations: Record<Language, any> = {
 
       // Recruit dialog : current roster banner
       currentRosterLabel: "Déjà dans votre armée",
+
+      // Roman Foederati ally
+      foederatiSelectLabel: "Choisissez votre allié",
+      foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
+      foederatiAllyLocked: "verrouillé par votre armée",
+      foederatiAllyLabel: "Alliés Foederati · $1",
+      foederatiAllyHint: "Vous pouvez recruter parmi les troupes de votre allié. Les chefs doivent rester romains.",
+      foederatiAllyRequired: "Choisissez une faction alliée avant de valider",
       err_tooManyShooters: "Trop de tireurs à pied ($1). Limite : $2 ($4% de $3 figurines).",
       err_tooManyCavalry: "Trop de cavaliers ($1). Limite: $2 (25% de $3 figurines).",
       err_recruitUniqueTalent: "Impossible de recruter plusieurs unités avec des talents uniques simultanément.",
@@ -299,6 +307,14 @@ export const translations: Record<Language, any> = {
 
       // Recruit dialog : current roster banner
       currentRosterLabel: "Already in your army",
+
+      // Roman Foederati ally
+      foederatiSelectLabel: "Pick your ally",
+      foederatiSelectPlaceholder: "Select a Finis Imperii faction",
+      foederatiAllyLocked: "locked by your army",
+      foederatiAllyLabel: "Foederati allies · $1",
+      foederatiAllyHint: "You can recruit from your ally's troops. Warlords must remain Roman.",
+      foederatiAllyRequired: "Pick an ally faction before confirming",
       err_tooManyShooters: "Too many foot shooters ($1). Limit: $2 ($4% of $3 models).",
       err_tooManyCavalry: "Too many cavalry ($1). Limit: $2 (25% of $3 models).",
       err_recruitUniqueTalent: "Cannot recruit multiple units with unique talents simultaneously.",

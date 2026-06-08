@@ -120,7 +120,7 @@ export function ArmyBuilder() {
 
   const validationErrors = getValidationErrors();
 
-  const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string) => {
+  const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string, foederatiAllyId?: string) => {
     const newTalents = equipmentIds.filter(id => 
       selectedFaction?.availableEquipment.find(e => e.id === id)?.type === 'talent'
     );
@@ -153,6 +153,7 @@ export function ArmyBuilder() {
       equipment: equipmentIds,
       quantity: quantity,
       sourceFactionId: sourceFactionId && sourceFactionId !== selectedFactionId ? sourceFactionId : undefined,
+      foederatiAllyId: foederatiAllyId || undefined,
     };
     setArmy([...army, newUnit]);
     toast.success(quantity > 1 ? t("unitsAdded") : t("unitAdded"));
@@ -178,7 +179,7 @@ export function ArmyBuilder() {
     setArmy(army.map(u => u.instanceId === instanceId ? { ...u, quantity: newQuantity } : u));
   };
 
-  const handleUpdateUnit = (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string) => {
+  const handleUpdateUnit = (instanceId: string, unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string, foederatiAllyId?: string) => {
     const unitToUpdate = army.find(u => u.instanceId === instanceId);
     if (!unitToUpdate) return;
 
@@ -218,6 +219,7 @@ export function ArmyBuilder() {
       equipment: equipmentIds,
       quantity: quantity,
       sourceFactionId: sourceFactionId && sourceFactionId !== selectedFactionId ? sourceFactionId : undefined,
+      foederatiAllyId: foederatiAllyId || undefined,
     } : u));
     toast.success(t("unitUpdated"));
   };
