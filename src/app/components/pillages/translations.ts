@@ -219,6 +219,30 @@ export const translations: Record<Language, any> = {
       statsTopEquipment: "Équipements les plus pris",
       statsTopTalents: "Talents les plus pris",
 
+      statsModeration: "Modération",
+      statsReportsQueue: "Signalements en attente",
+      statsNoReports: "Aucun signalement en attente.",
+      statsArmyGone: "(liste supprimée)",
+      statsReportView: "Voir",
+      statsReportReviewed: "Marquer revu",
+      statsReportIgnore: "Ignorer",
+      statsReportDeleteArmy: "Supprimer la liste",
+      reportDeleteConfirm: "Supprimer définitivement la liste \"$1\" ?",
+      reportMarkedReviewed: "Signalement marqué comme revu",
+      reportDismissed: "Signalement ignoré",
+      reportArmyDeleted: "Liste supprimée et signalement clos",
+
+      statsQuality: "Qualité des listes",
+      statsRoleMix: "Composition moyenne par faction",
+      statsLists: "listes",
+      statsViolatingLists: "Listes hors règles",
+      statsAllValid: "Toutes les listes publiées sont valides.",
+
+      statsInactiveSection: "Comptes dormants",
+      statsInactiveLabel: "Inactifs depuis plus de 90 jours",
+      statsNoInactive: "Aucun compte inactif au-delà de 90 jours.",
+      statsNeverConnected: "Jamais connecté",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -451,6 +475,30 @@ export const translations: Record<Language, any> = {
       statsTopArmies: "Most favorited lists",
       statsTopEquipment: "Most picked equipment",
       statsTopTalents: "Most picked talents",
+
+      statsModeration: "Moderation",
+      statsReportsQueue: "Pending reports",
+      statsNoReports: "No pending reports.",
+      statsArmyGone: "(list deleted)",
+      statsReportView: "View",
+      statsReportReviewed: "Mark reviewed",
+      statsReportIgnore: "Dismiss",
+      statsReportDeleteArmy: "Delete list",
+      reportDeleteConfirm: "Permanently delete the list \"$1\" ?",
+      reportMarkedReviewed: "Report marked reviewed",
+      reportDismissed: "Report dismissed",
+      reportArmyDeleted: "List deleted, report closed",
+
+      statsQuality: "List quality",
+      statsRoleMix: "Average composition per faction",
+      statsLists: "lists",
+      statsViolatingLists: "Rule-breaking lists",
+      statsAllValid: "All published lists are valid.",
+
+      statsInactiveSection: "Dormant accounts",
+      statsInactiveLabel: "Inactive for more than 90 days",
+      statsNoInactive: "No inactive account beyond 90 days.",
+      statsNeverConnected: "Never connected",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",
