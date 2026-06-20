@@ -213,7 +213,7 @@ export function MyListsPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-['UnifrakturCook'] text-3xl text-stone-100 leading-tight drop-shadow-sm">
+                        <h3 className="font-serif text-3xl text-stone-100 leading-tight drop-shadow-sm">
                           {a.army_name || "Sans nom"}
                         </h3>
                         {a.is_public ? (

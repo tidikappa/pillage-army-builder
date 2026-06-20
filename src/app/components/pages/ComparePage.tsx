@@ -31,7 +31,7 @@ function ArmyColumn({ army }: { army: SavedArmy | null }) {
   return (
     <Card className="bg-black/70 border border-white/15 rounded-none text-stone-100">
       <CardHeader className="p-5">
-        <h3 className="font-['UnifrakturCook'] text-3xl text-stone-100 leading-tight">
+        <h3 className="font-serif text-3xl text-stone-100 leading-tight">
           {army.army_name || "Sans nom"}
         </h3>
         <div className="text-sm font-bold uppercase tracking-widest text-[#cc6512] mt-1">

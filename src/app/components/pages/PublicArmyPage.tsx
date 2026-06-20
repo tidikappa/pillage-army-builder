@@ -194,7 +194,7 @@ export function PublicArmyPage() {
         <CardHeader className="p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex-1 min-w-0">
-              <h2 className="font-['UnifrakturCook'] text-4xl text-stone-100 leading-tight drop-shadow-sm">
+              <h2 className="font-serif text-4xl text-stone-100 leading-tight drop-shadow-sm">
                 {army.army_name || "Sans nom"}
               </h2>
               <div className="text-sm font-bold uppercase tracking-widest text-[#cc6512] mt-1">

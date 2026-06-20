@@ -766,7 +766,7 @@ export function ArmyBuilder() {
         >
           <CardHeader className="pb-4">
             <CardTitle className="flex justify-between items-center">
-              <div className="flex items-center gap-3 text-stone-300 font-serif tracking-wide text-xl uppercase">
+              <div className="flex items-center gap-3 text-white font-serif tracking-wide text-xl uppercase">
                 <span>{t('treasuryTitle')}</span>
               </div>
             </CardTitle>
