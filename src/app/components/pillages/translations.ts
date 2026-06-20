@@ -172,6 +172,16 @@ export const translations: Record<Language, any> = {
       batchDeleteConfirm: "Supprimer $1 unité(s) sélectionnée(s) ?",
       batchDeleteSuccess: "$1 unité(s) supprimée(s)",
 
+      // Compare two lists
+      compareTitle: "Comparatif",
+      compareTrigger: "Comparer cette liste",
+      compareTriggerSecond: "Comparer avec celle-ci",
+      compareSeedSelected: "Sélectionnée pour comparaison",
+      compareSeedPicked: "« $1 » prête à comparer, choisis une 2e liste",
+      compareSeedBanner: "À comparer : « $1 ». Choisis une 2e liste...",
+      compareCancel: "Annuler",
+      compareMissing: "Liste introuvable ou non publique",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -357,6 +367,16 @@ export const translations: Record<Language, any> = {
       batchDelete: "Delete selection",
       batchDeleteConfirm: "Delete $1 selected unit(s) ?",
       batchDeleteSuccess: "$1 unit(s) deleted",
+
+      // Compare two lists
+      compareTitle: "Side by side",
+      compareTrigger: "Compare this list",
+      compareTriggerSecond: "Compare with this one",
+      compareSeedSelected: "Selected for comparison",
+      compareSeedPicked: "« $1 » ready, pick a 2nd list",
+      compareSeedBanner: "To compare: « $1 ». Pick a 2nd list...",
+      compareCancel: "Cancel",
+      compareMissing: "List not found or not public",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",

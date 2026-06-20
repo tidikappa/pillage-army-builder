@@ -132,7 +132,7 @@ export function PublicArmyPage() {
   if (error || !army) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center space-y-4">
-        <h2 className="text-3xl font-bold font-['UnifrakturCook'] text-[#232221]">
+        <h2 className="text-3xl font-bold font-['UnifrakturCook'] text-stone-100 drop-shadow-md">
           {t("publicArmyNotFoundTitle")}
         </h2>
         <p className="text-stone-200">{error}</p>
@@ -153,8 +153,7 @@ export function PublicArmyPage() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link to="/galerie">
           <Button
-            variant="ghost"
-            className="text-stone-200 hover:text-[#cc6512] rounded-none font-bold uppercase tracking-widest text-xs"
+            className="bg-black/60 hover:bg-black/80 text-stone-100 border border-white/20 hover:border-[#cc6512]/60 rounded-none font-bold uppercase tracking-widest text-xs px-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             {t("backToGallery")}

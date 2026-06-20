@@ -8,7 +8,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { Card, CardHeader, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork, Link as LinkIcon } from "lucide-react";
+import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork, Link as LinkIcon, Columns, X } from "lucide-react";
 import { toast } from "sonner";
 import { validateArmy } from "../pillages/validation";
 import { ReportArmyButton } from "../pillages/ReportArmyButton";
@@ -121,6 +121,24 @@ export function GalleryPage() {
     toast.success(t("forkLoaded"));
   };
 
+  // Comparison "seed" : the first army the user picked. Clicking another
+  // army's compare button navigates to /comparer/:a/vs/:b.
+  const [compareSeed, setCompareSeed] = React.useState<SavedArmy | null>(null);
+
+  const onCompareClick = (a: SavedArmy) => {
+    if (!compareSeed) {
+      setCompareSeed(a);
+      toast.info(t("compareSeedPicked").replace("$1", a.army_name || "Sans nom"));
+      return;
+    }
+    if (compareSeed.id === a.id) {
+      setCompareSeed(null);
+      return;
+    }
+    navigate(`/comparer/${compareSeed.id}/vs/${a.id}`);
+    setCompareSeed(null);
+  };
+
   const copyArmyLink = async (armyId: string) => {
     const url = `${window.location.origin}/galerie/${armyId}`;
     try {
@@ -199,6 +217,25 @@ export function GalleryPage() {
             <span className="font-bold uppercase tracking-widest">{t("moderatorModeActive")}</span>{" "}
             {t("moderatorModeHelp")}
           </p>
+        </div>
+      )}
+
+      {compareSeed && (
+        <div className="sticky top-2 z-20 bg-[#0F5F5E] border-2 border-white/20 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(15,95,94,0.4)] backdrop-blur-md">
+          <div className="text-white text-sm inline-flex items-center gap-2">
+            <Columns className="w-4 h-4 shrink-0" />
+            <span className="font-bold uppercase tracking-widest text-xs">
+              {t("compareSeedBanner").replace("$1", compareSeed.army_name || "Sans nom")}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setCompareSeed(null)}
+            className="text-white hover:bg-white/10 rounded-none font-bold uppercase tracking-widest text-xs"
+          >
+            <X className="w-4 h-4 mr-1" />
+            {t("compareCancel")}
+          </Button>
         </div>
       )}
 
@@ -364,6 +401,26 @@ export function GalleryPage() {
                           aria-label={t("copyLink")}
                         >
                           <LinkIcon className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onCompareClick(a)}
+                          className={`h-8 w-8 transition-all ${
+                            compareSeed?.id === a.id
+                              ? "text-teal-300 bg-teal-500/20 border border-teal-400/50 hover:bg-teal-500/30"
+                              : "text-stone-300 hover:text-teal-300"
+                          }`}
+                          title={
+                            compareSeed?.id === a.id
+                              ? t("compareSeedSelected")
+                              : compareSeed
+                                ? t("compareTriggerSecond")
+                                : t("compareTrigger")
+                          }
+                          aria-label={t("compareTrigger")}
+                        >
+                          <Columns className="w-4 h-4" />
                         </Button>
                         <ReportArmyButton army={a} />
                         {isAdmin && (
