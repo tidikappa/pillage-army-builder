@@ -66,9 +66,7 @@ export default defineConfig({
       },
       workbox: {
         // Cache for offline-ish usage (still needs Supabase online for armies).
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
-        // Skip the large background image from precache (3.5 MB).
-        globIgnores: ['**/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png'],
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2,avif,webp}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
     }),

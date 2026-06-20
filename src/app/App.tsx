@@ -1,17 +1,18 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { ArmyBuilder } from "./components/pillages/ArmyBuilder";
-import { GalleryPage } from "./components/pages/GalleryPage";
-import { MyListsPage } from "./components/pages/MyListsPage";
-import { LoginPage } from "./components/pages/LoginPage";
-import { SignupPage } from "./components/pages/SignupPage";
-import { ForgotPasswordPage } from "./components/pages/ForgotPasswordPage";
-import { UpdatePasswordPage } from "./components/pages/UpdatePasswordPage";
-import { AdminUsersPage } from "./components/pages/AdminUsersPage";
+// Secondary routes are code-split, the main builder stays in the initial bundle.
+const GalleryPage = React.lazy(() => import("./components/pages/GalleryPage").then(m => ({ default: m.GalleryPage })));
+const MyListsPage = React.lazy(() => import("./components/pages/MyListsPage").then(m => ({ default: m.MyListsPage })));
+const LoginPage = React.lazy(() => import("./components/pages/LoginPage").then(m => ({ default: m.LoginPage })));
+const SignupPage = React.lazy(() => import("./components/pages/SignupPage").then(m => ({ default: m.SignupPage })));
+const ForgotPasswordPage = React.lazy(() => import("./components/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
+const UpdatePasswordPage = React.lazy(() => import("./components/pages/UpdatePasswordPage").then(m => ({ default: m.UpdatePasswordPage })));
+const AdminUsersPage = React.lazy(() => import("./components/pages/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
 import { Toaster } from "./components/ui/sonner";
 import { TranslationProvider, useTranslation } from "./components/pillages/TranslationContext";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
-import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.png";
+import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.avif";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
 import logoImage from "figma:asset/b387a8d09d5ce09a0c5f23a9186ce8121bc6253f.png";
 import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords, ShieldAlert } from "lucide-react";
@@ -259,16 +260,24 @@ export default function App() {
       <TranslationProvider>
         <AuthProvider>
           <Layout>
-            <Routes>
-              <Route path="/" element={<ArmyBuilder />} />
-              <Route path="/gallery" element={<GalleryPage />} />
-              <Route path="/my-lists" element={<MyListsPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/update-password" element={<UpdatePasswordPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-            </Routes>
+            <Suspense
+              fallback={
+                <p className="text-stone-300 text-sm font-serif tracking-widest uppercase opacity-70 py-12 text-center">
+                  Chargement...
+                </p>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<ArmyBuilder />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/my-lists" element={<MyListsPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/update-password" element={<UpdatePasswordPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+              </Routes>
+            </Suspense>
           </Layout>
         </AuthProvider>
       </TranslationProvider>
