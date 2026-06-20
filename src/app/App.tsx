@@ -14,6 +14,7 @@ const ComparePage = React.lazy(() => import("./components/pages/ComparePage").th
 import { Toaster } from "./components/ui/sonner";
 import { TranslationProvider, useTranslation } from "./components/pillages/TranslationContext";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
+import { usePageViewTracking } from "./lib/usePageViewTracking";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.avif";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
 import logoImage from "figma:asset/b387a8d09d5ce09a0c5f23a9186ce8121bc6253f.png";
@@ -220,6 +221,7 @@ function SiteHeader() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
+  usePageViewTracking();
   return (
     <div className="min-h-screen text-stone-200 font-sans relative selection:bg-orange-500/30 selection:text-orange-100 overflow-x-hidden flex flex-col">
       <div className="fixed inset-0 z-0 bg-[#141210]">

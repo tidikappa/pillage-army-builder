@@ -419,7 +419,45 @@ push si tu as l'app mobile Discord). Si rien n'arrive :
 - Re-vérifie que la variable `DISCORD_WEBHOOK_URL` est bien renseignée
   dans **Project Settings → Edge Functions → Secrets**.
 
-## 9. (Optionnel) Désactiver la confirmation email
+## 9. Analytics visiteurs (depuis v1.23.0)
+
+Page-view tracking minimaliste pour alimenter le dashboard `/admin/stats`.
+Aucune IP, pas d'user-agent, juste un `session_id` UUID stocké en
+localStorage et le path normalisé.
+
+```sql
+create table public.page_views (
+  id bigserial primary key,
+  path text not null,
+  session_id text not null,
+  user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index page_views_created_idx on public.page_views(created_at);
+create index page_views_session_idx on public.page_views(session_id);
+create index page_views_path_idx on public.page_views(path);
+
+alter table public.page_views enable row level security;
+
+-- Insert ouvert à tous : visiteurs anonymes comme connectés.
+create policy "Anyone can record a page view"
+  on public.page_views for insert
+  to anon, authenticated
+  with check (true);
+
+-- Lecture réservée aux admins.
+create policy "Admins can read page views"
+  on public.page_views for select
+  using (coalesce((auth.jwt() -> 'app_metadata' ->> 'role'), '') = 'admin');
+```
+
+Le hook front `usePageViewTracking` insère un row à chaque change de
+`location.pathname` (debounce 300 ms, déduplication des doublons HMR).
+Les UUID des permalink `/galerie/:id` sont remplacés par `:id` pour
+garder une cardinalité basse sur les paths.
+
+## 10. (Optionnel) Désactiver la confirmation email
 
 Pour les tests locaux, dans **Authentication → Providers → Email**, désactiver
 "Confirm email" pour que les inscriptions soient immédiatement valides.

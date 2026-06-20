@@ -1,7 +1,7 @@
 {
   "name": "army-builder-pillage",
   "private": true,
-  "version": "1.22.3",
+  "version": "1.23.0",
   "type": "module",
   "description": "Army Builder for Pillage – local development build, originally exported from Figma Make.",
   "scripts": {
