@@ -1,4 +1,17 @@
 {
+  "rewrites": [
+    {
+      "source": "/galerie/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|WhatsApp|Pinterest|Embedly|[Bb]ot|crawler|spider).*"
+        }
+      ],
+      "destination": "/api/og-list/:id"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
