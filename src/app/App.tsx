@@ -9,6 +9,7 @@ const SignupPage = React.lazy(() => import("./components/pages/SignupPage").then
 const ForgotPasswordPage = React.lazy(() => import("./components/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
 const UpdatePasswordPage = React.lazy(() => import("./components/pages/UpdatePasswordPage").then(m => ({ default: m.UpdatePasswordPage })));
 const AdminUsersPage = React.lazy(() => import("./components/pages/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
+const AdminStatsPage = React.lazy(() => import("./components/pages/AdminStatsPage").then(m => ({ default: m.AdminStatsPage })));
 const PublicArmyPage = React.lazy(() => import("./components/pages/PublicArmyPage").then(m => ({ default: m.PublicArmyPage })));
 const ComparePage = React.lazy(() => import("./components/pages/ComparePage").then(m => ({ default: m.ComparePage })));
 import { Toaster } from "./components/ui/sonner";
@@ -112,11 +113,18 @@ function SecondaryNavItems({ onItemClick, variant = "light" }: { onItemClick?: (
   return (
     <>
       {isAdmin && (
-        <NavLink to="/admin/users" className={linkClass} onClick={onItemClick}>
-          <span className="inline-flex items-center gap-1 text-red-500">
-            <ShieldAlert className="w-3 h-3" /> Admin
-          </span>
-        </NavLink>
+        <>
+          <NavLink to="/admin/stats" className={linkClass} onClick={onItemClick}>
+            <span className="inline-flex items-center gap-1 text-red-500">
+              <ShieldAlert className="w-3 h-3" /> Stats
+            </span>
+          </NavLink>
+          <NavLink to="/admin/users" className={linkClass} onClick={onItemClick}>
+            <span className="inline-flex items-center gap-1 text-red-500">
+              <ShieldAlert className="w-3 h-3" /> Admin
+            </span>
+          </NavLink>
+        </>
       )}
       {!loading &&
         (user ? (
@@ -290,6 +298,7 @@ export default function App() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/update-password" element={<UpdatePasswordPage />} />
                 <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/stats" element={<AdminStatsPage />} />
               </Routes>
             </Suspense>
           </Layout>
