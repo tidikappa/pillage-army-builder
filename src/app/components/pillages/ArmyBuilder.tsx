@@ -242,7 +242,34 @@ export function ArmyBuilder() {
 
   const handleRemoveUnit = (instanceId: string) => {
     setArmy(army.filter(u => u.instanceId !== instanceId));
+    setSelectedInstanceIds(prev => {
+      const next = new Set(prev);
+      next.delete(instanceId);
+      return next;
+    });
     toast.info(t("unitRemoved"));
+  };
+
+  const [selectedInstanceIds, setSelectedInstanceIds] = React.useState<Set<string>>(new Set());
+
+  const toggleUnitSelection = (instanceId: string) => {
+    setSelectedInstanceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(instanceId)) next.delete(instanceId);
+      else next.add(instanceId);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedInstanceIds(new Set());
+
+  const handleBatchDelete = () => {
+    const count = selectedInstanceIds.size;
+    if (count === 0) return;
+    if (!confirm(t("batchDeleteConfirm").replace("$1", count.toString()))) return;
+    setArmy(army.filter(u => !selectedInstanceIds.has(u.instanceId)));
+    clearSelection();
+    toast.success(t("batchDeleteSuccess").replace("$1", count.toString()));
   };
 
   const handleUpdateQuantity = (instanceId: string, newQuantity: number) => {
@@ -943,6 +970,31 @@ export function ArmyBuilder() {
               </>
             ) : (
               <>
+                {/* Batch selection bar : appears as soon as the user ticks
+                    at least one unit checkbox. */}
+                {selectedInstanceIds.size > 0 && (
+                  <div className="sticky top-2 z-20 bg-red-950/95 backdrop-blur-md border-2 border-red-500/70 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_25px_rgba(239,68,68,0.3)]">
+                    <div className="text-white text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4" />
+                      {t("batchSelectedCount").replace("$1", selectedInstanceIds.size.toString())}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={clearSelection}
+                        variant="ghost"
+                        className="text-stone-200 hover:text-white rounded-none font-bold uppercase tracking-widest text-xs"
+                      >
+                        {t("batchCancel")}
+                      </Button>
+                      <Button
+                        onClick={handleBatchDelete}
+                        className="bg-red-600 hover:bg-red-500 text-white rounded-none font-bold uppercase tracking-widest text-xs"
+                      >
+                        {t("batchDelete")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 gap-4">
                   {army.map((unit, idx) => (
                       <UnitCard
@@ -960,6 +1012,8 @@ export function ArmyBuilder() {
                       canMoveDown={idx < army.length - 1}
                       dogHandlerActive={hasDogHandler}
                       army={army}
+                      isSelected={selectedInstanceIds.has(unit.instanceId)}
+                      onToggleSelection={toggleUnitSelection}
                       />
                   ))}
                 </div>

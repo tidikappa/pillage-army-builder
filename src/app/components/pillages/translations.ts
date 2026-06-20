@@ -163,6 +163,15 @@ export const translations: Record<Language, any> = {
       backToGallery: "Retour à la galerie",
       publicArmyNotFoundTitle: "Liste introuvable",
 
+      // Batch unit selection
+      unitSelect: "Sélectionner cette unité",
+      unitDeselect: "Désélectionner",
+      batchSelectedCount: "$1 unité(s) sélectionnée(s)",
+      batchCancel: "Annuler",
+      batchDelete: "Supprimer la sélection",
+      batchDeleteConfirm: "Supprimer $1 unité(s) sélectionnée(s) ?",
+      batchDeleteSuccess: "$1 unité(s) supprimée(s)",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -339,6 +348,15 @@ export const translations: Record<Language, any> = {
       linkCopyFailed: "Failed to copy link",
       backToGallery: "Back to gallery",
       publicArmyNotFoundTitle: "List not found",
+
+      // Batch unit selection
+      unitSelect: "Select this unit",
+      unitDeselect: "Deselect",
+      batchSelectedCount: "$1 unit(s) selected",
+      batchCancel: "Cancel",
+      batchDelete: "Delete selection",
+      batchDeleteConfirm: "Delete $1 selected unit(s) ?",
+      batchDeleteSuccess: "$1 unit(s) deleted",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",

@@ -40,11 +40,14 @@ interface UnitCardProps {
   dogHandlerActive?: boolean;
   /** Full army composition, threaded down so the edit modal can apply army-wide rules. */
   army?: ArmyUnit[];
+  /** Batch-selection state. When set, a checkbox is rendered on the card. */
+  isSelected?: boolean;
+  onToggleSelection?: (instanceId: string) => void;
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army }: UnitCardProps) {
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army, isSelected = false, onToggleSelection }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -126,19 +129,37 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
 
   return (
     <>
-    <Card 
-        className="group relative overflow-hidden border-0 bg-transparent rounded-none shadow-lg"
+    <Card
+        className={`group relative overflow-hidden border-0 bg-transparent rounded-none shadow-lg transition-all ${
+          isSelected ? "ring-2 ring-red-500/70 shadow-[0_0_20px_rgba(239,68,68,0.25)]" : ""
+        }`}
         style={{ backgroundImage: `url(${containerBg})`, backgroundSize: '100% 100%' }}
     >
-      
       <CardContent className="p-8 pl-10">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-5">
-          
-          {/* Left: Reorder + Icon + Details */}
+
+          {/* Left: Selection + Reorder + Icon + Details */}
           <div className="flex gap-3 sm:gap-5 flex-1 items-start">
-            {/* Reorder arrows */}
-            {(onMoveUp || onMoveDown) && (
-              <div className="flex flex-col items-center bg-black/20 rounded-none border border-white/10 shrink-0 mt-1">
+            {/* Selection checkbox + reorder arrows, stacked */}
+            {(onToggleSelection || onMoveUp || onMoveDown) && (
+              <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
+                {onToggleSelection && (
+                  <button
+                    type="button"
+                    onClick={() => onToggleSelection(unit.instanceId)}
+                    className={`h-5 w-5 rounded-none border-2 flex items-center justify-center transition-all ${
+                      isSelected
+                        ? "bg-red-500 border-red-300 text-white shadow-md"
+                        : "bg-black/40 border-white/40 text-transparent hover:border-white hover:bg-black/60"
+                    }`}
+                    aria-label={isSelected ? t("unitDeselect") : t("unitSelect")}
+                    title={isSelected ? t("unitDeselect") : t("unitSelect")}
+                  >
+                    <Check className="w-3 h-3" />
+                  </button>
+                )}
+                {(onMoveUp || onMoveDown) && (
+              <div className="flex flex-col items-center bg-black/20 rounded-none border border-white/10">
                 <button
                   type="button"
                   onClick={() => onMoveUp?.(unit.instanceId)}
@@ -159,6 +180,8 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
                 </button>
+              </div>
+                )}
               </div>
             )}
             {/* Icon Box (clickable when onUpdateCustomIcon is provided) */}
