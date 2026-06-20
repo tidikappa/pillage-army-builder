@@ -17,14 +17,21 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 import bgImage from "figma:asset/f0b78e52b6e4cfe5f493c208bfa61d8923dd3eac.avif";
 import footerBorder from "figma:asset/00a5ea4815409642dbc745fcea10c018b5132138.png";
 import logoImage from "figma:asset/b387a8d09d5ce09a0c5f23a9186ce8121bc6253f.png";
-import { Globe, LogIn, LogOut, BookOpen, User, Menu, X, Swords, ShieldAlert } from "lucide-react";
+import { LogIn, LogOut, BookOpen, User, Menu, X, Swords, ShieldAlert } from "lucide-react";
 
 function LanguageSelector({ variant = "light" }: { variant?: "light" | "dark" }) {
   const { language, setLanguage } = useTranslation();
   const isDark = variant === "dark";
+  const flag = language === "fr" ? "\u{1F1EB}\u{1F1F7}" : "\u{1F1EC}\u{1F1E7}";
   return (
     <div className="flex items-center gap-2">
-      <Globe className={`w-4 h-4 ${isDark ? "text-stone-300" : "text-[#232221]"}`} />
+      <span
+        className="text-lg leading-none select-none"
+        role="img"
+        aria-label={language === "fr" ? "Français" : "English"}
+      >
+        {flag}
+      </span>
       <select
         value={language}
         onChange={(e) => setLanguage(e.target.value as "fr" | "en")}
