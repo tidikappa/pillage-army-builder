@@ -357,95 +357,88 @@ export function GalleryPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5">
-                        <Coins className="w-4 h-4 text-[#cc6512]" />
-                        <span className="text-lg font-['UnifrakturCook'] font-bold text-[#cc6512] leading-none">
-                          {a.budget}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 ml-0.5">
-                          po
-                        </span>
-                      </div>
-                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleFavorite(a.id)}
-                          className={`h-8 w-8 rounded-none transition-all ${
-                            isFav
-                              ? "bg-amber-500/25 border border-amber-400/70 text-amber-300 hover:bg-amber-500/35 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
-                              : "text-stone-400 hover:text-amber-400"
-                          }`}
-                          title={isFav ? t("favoriteRemove") : t("favoriteAdd")}
-                          aria-label={isFav ? t("favoriteRemove") : t("favoriteAdd")}
-                        >
-                          <Star className={`w-4 h-4 ${isFav ? "fill-current" : ""}`} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => forkIntoBuilder(a)}
-                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
-                          title={t("forkInBuilder")}
-                          aria-label={t("forkInBuilder")}
-                        >
-                          <GitFork className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyArmyLink(a.id)}
-                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
-                          title={t("copyLink")}
-                          aria-label={t("copyLink")}
-                        >
-                          <LinkIcon className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onCompareClick(a)}
-                          className={`h-8 w-8 transition-all ${
-                            compareSeed?.id === a.id
-                              ? "text-teal-300 bg-teal-500/20 border border-teal-400/50 hover:bg-teal-500/30"
-                              : "text-stone-300 hover:text-teal-300"
-                          }`}
-                          title={
-                            compareSeed?.id === a.id
-                              ? t("compareSeedSelected")
-                              : compareSeed
-                                ? t("compareTriggerSecond")
-                                : t("compareTrigger")
-                          }
-                          aria-label={t("compareTrigger")}
-                        >
-                          <Columns className="w-4 h-4" />
-                        </Button>
-                        <ReportArmyButton army={a} />
-                        {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => adminDelete(a)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-950/40 h-8 w-8"
-                            title="Supprimer (modération)"
-                            aria-label="Supprimer en tant que modérateur"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggle(a.id)}
-                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
-                          aria-label={isOpen ? "Replier" : "Déplier"}
-                        >
-                          {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                        </Button>
-                      </div>
+                    <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5 shrink-0">
+                      <Coins className="w-4 h-4 text-[#cc6512]" />
+                      <span className="text-lg font-['UnifrakturCook'] font-bold text-[#cc6512] leading-none">
+                        {a.budget}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 ml-0.5">
+                        po
+                      </span>
                     </div>
+                  </div>
+
+                  {/* Action bar : compact buttons (icon + label) under the
+                      card header, separated by a subtle divider. */}
+                  <div
+                    className="mt-4 pt-3 border-t border-white/10 flex flex-wrap gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggleFavorite(a.id)}
+                      className={`h-8 px-2 rounded-none transition-all inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${
+                        isFav
+                          ? "bg-amber-500/25 border border-amber-400/70 text-amber-300 hover:bg-amber-500/35 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                          : "text-stone-300 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent"
+                      }`}
+                      aria-label={isFav ? t("favoriteRemove") : t("favoriteAdd")}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${isFav ? "fill-current" : ""}`} />
+                      <span>{t("ctaFavorite")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => forkIntoBuilder(a)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      aria-label={t("forkInBuilder")}
+                    >
+                      <GitFork className="w-3.5 h-3.5" />
+                      <span>{t("ctaImport")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => copyArmyLink(a.id)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      aria-label={t("copyLink")}
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                      <span>{t("ctaLink")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => onCompareClick(a)}
+                      className={`h-8 px-2 rounded-none transition-all inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${
+                        compareSeed?.id === a.id
+                          ? "text-teal-300 bg-teal-500/20 border border-teal-400/50 hover:bg-teal-500/30"
+                          : "text-stone-300 hover:text-teal-300 hover:bg-teal-500/10 border border-transparent"
+                      }`}
+                      aria-label={t("compareTrigger")}
+                    >
+                      <Columns className="w-3.5 h-3.5" />
+                      <span>{t("ctaCompare")}</span>
+                    </Button>
+                    <ReportArmyButton army={a} />
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => adminDelete(a)}
+                        className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-transparent"
+                        aria-label="Supprimer en tant que modérateur"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{t("ctaDelete")}</span>
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggle(a.id)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
+                      aria-label={isOpen ? "Replier" : "Déplier"}
+                    >
+                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <span>{isOpen ? t("ctaCollapse") : t("ctaExpand")}</span>
+                    </Button>
                   </div>
                 </CardHeader>
                 {isOpen && (

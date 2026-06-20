@@ -248,58 +248,59 @@ export function MyListsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-3 shrink-0">
-                      <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5">
-                        <Coins className="w-4 h-4 text-[#cc6512]" />
-                        <span className="text-lg font-['UnifrakturCook'] font-bold text-[#cc6512] leading-none">
-                          {a.budget}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 ml-0.5">
-                          po
-                        </span>
-                      </div>
-                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => loadIntoBuilder(a)}
-                          className="text-stone-300 hover:text-[#cc6512] hover:bg-white/5 h-8 w-8"
-                          title="Charger dans le builder"
-                          aria-label="Charger dans le builder"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => togglePublish(a)}
-                          className="text-stone-300 hover:text-[#cc6512] hover:bg-white/5 h-8 w-8"
-                          title={a.is_public ? "Retirer de la galerie" : "Publier dans la galerie"}
-                          aria-label={a.is_public ? "Retirer de la galerie" : "Publier dans la galerie"}
-                        >
-                          {a.is_public ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(a.id)}
-                          className="text-stone-400 hover:text-red-400 hover:bg-red-950/30 h-8 w-8"
-                          title="Supprimer"
-                          aria-label="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggle(a.id)}
-                          className="text-stone-300 hover:text-[#cc6512] hover:bg-white/5 h-8 w-8"
-                          aria-label={isOpen ? "Replier" : "Déplier"}
-                        >
-                          {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </Button>
-                      </div>
+                    <div className="inline-flex items-center gap-1.5 bg-[#cc6512]/15 border border-[#cc6512]/40 px-3 py-1.5 shrink-0">
+                      <Coins className="w-4 h-4 text-[#cc6512]" />
+                      <span className="text-lg font-['UnifrakturCook'] font-bold text-[#cc6512] leading-none">
+                        {a.budget}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-widest text-[#cc6512]/80 ml-0.5">
+                        po
+                      </span>
                     </div>
+                  </div>
+
+                  {/* Action bar : compact buttons (icon + label) under the
+                      card header, separated by a subtle divider. */}
+                  <div
+                    className="mt-4 pt-3 border-t border-white/10 flex flex-wrap gap-1"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Button
+                      variant="ghost"
+                      onClick={() => loadIntoBuilder(a)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      aria-label={t("ctaEdit")}
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>{t("ctaEdit")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => togglePublish(a)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      aria-label={a.is_public ? t("ctaUnpublish") : t("ctaPublish")}
+                    >
+                      {a.is_public ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                      <span>{a.is_public ? t("ctaUnpublish") : t("ctaPublish")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => remove(a.id)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-red-400 hover:bg-red-950/30 border border-transparent"
+                      aria-label={t("ctaDelete")}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{t("ctaDelete")}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => toggle(a.id)}
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
+                      aria-label={isOpen ? t("ctaCollapse") : t("ctaExpand")}
+                    >
+                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      <span>{isOpen ? t("ctaCollapse") : t("ctaExpand")}</span>
+                    </Button>
                   </div>
                 </CardHeader>
                 {isOpen && (

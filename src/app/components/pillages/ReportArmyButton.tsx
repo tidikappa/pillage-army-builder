@@ -89,7 +89,6 @@ export function ReportArmyButton({ army }: { army: SavedArmy }) {
     <>
       <Button
         variant="ghost"
-        size="icon"
         onClick={() => {
           if (alreadyReported) {
             toast.info(t("reportAlready"));
@@ -103,15 +102,16 @@ export function ReportArmyButton({ army }: { army: SavedArmy }) {
           }
           setOpen(true);
         }}
-        className={`h-8 w-8 rounded-none ${
+        className={`h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest border border-transparent ${
           alreadyReported
             ? "text-stone-600 cursor-not-allowed"
-            : "text-stone-400 hover:text-red-400"
+            : "text-stone-300 hover:text-red-400 hover:bg-red-500/10"
         }`}
         title={alreadyReported ? t("reportAlready") : t("reportTitle")}
         aria-label={t("reportTitle")}
       >
-        <Flag className="w-4 h-4" />
+        <Flag className="w-3.5 h-3.5" />
+        <span>{t("ctaReport")}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

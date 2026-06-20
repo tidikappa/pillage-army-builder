@@ -182,6 +182,19 @@ export const translations: Record<Language, any> = {
       compareCancel: "Annuler",
       compareMissing: "Liste introuvable ou non publique",
 
+      // Gallery card CTA labels
+      ctaFavorite: "Favori",
+      ctaImport: "Importer",
+      ctaLink: "Lien",
+      ctaCompare: "Comparer",
+      ctaReport: "Signaler",
+      ctaDelete: "Supprimer",
+      ctaExpand: "Déplier",
+      ctaCollapse: "Replier",
+      ctaEdit: "Éditer",
+      ctaPublish: "Publier",
+      ctaUnpublish: "Dépublier",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -377,6 +390,19 @@ export const translations: Record<Language, any> = {
       compareSeedBanner: "To compare: « $1 ». Pick a 2nd list...",
       compareCancel: "Cancel",
       compareMissing: "List not found or not public",
+
+      // Gallery card CTA labels
+      ctaFavorite: "Favorite",
+      ctaImport: "Import",
+      ctaLink: "Link",
+      ctaCompare: "Compare",
+      ctaReport: "Report",
+      ctaDelete: "Delete",
+      ctaExpand: "Expand",
+      ctaCollapse: "Collapse",
+      ctaEdit: "Edit",
+      ctaPublish: "Publish",
+      ctaUnpublish: "Unpublish",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",
