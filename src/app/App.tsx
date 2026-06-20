@@ -9,6 +9,7 @@ const SignupPage = React.lazy(() => import("./components/pages/SignupPage").then
 const ForgotPasswordPage = React.lazy(() => import("./components/pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
 const UpdatePasswordPage = React.lazy(() => import("./components/pages/UpdatePasswordPage").then(m => ({ default: m.UpdatePasswordPage })));
 const AdminUsersPage = React.lazy(() => import("./components/pages/AdminUsersPage").then(m => ({ default: m.AdminUsersPage })));
+const PublicArmyPage = React.lazy(() => import("./components/pages/PublicArmyPage").then(m => ({ default: m.PublicArmyPage })));
 import { Toaster } from "./components/ui/sonner";
 import { TranslationProvider, useTranslation } from "./components/pillages/TranslationContext";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
@@ -270,6 +271,8 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<ArmyBuilder />} />
                 <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/galerie" element={<GalleryPage />} />
+                <Route path="/galerie/:id" element={<PublicArmyPage />} />
                 <Route path="/my-lists" element={<MyListsPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />

@@ -8,7 +8,7 @@ import { useAuth } from "../../lib/AuthContext";
 import { Card, CardHeader, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork } from "lucide-react";
+import { ChevronDown, ChevronUp, Coins, User, Calendar, ShieldAlert, Trash2, AlertTriangle, Star, GitFork, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { validateArmy } from "../pillages/validation";
 import { ReportArmyButton } from "../pillages/ReportArmyButton";
@@ -119,6 +119,16 @@ export function GalleryPage() {
       },
     });
     toast.success(t("forkLoaded"));
+  };
+
+  const copyArmyLink = async (armyId: string) => {
+    const url = `${window.location.origin}/galerie/${armyId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success(t("linkCopied"));
+    } catch {
+      toast.error(t("linkCopyFailed"));
+    }
   };
 
   const adminDelete = async (army: SavedArmy) => {
@@ -344,6 +354,16 @@ export function GalleryPage() {
                           aria-label={t("forkInBuilder")}
                         >
                           <GitFork className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyArmyLink(a.id)}
+                          className="text-stone-300 hover:text-[#cc6512] h-8 w-8"
+                          title={t("copyLink")}
+                          aria-label={t("copyLink")}
+                        >
+                          <LinkIcon className="w-4 h-4" />
                         </Button>
                         <ReportArmyButton army={a} />
                         {isAdmin && (

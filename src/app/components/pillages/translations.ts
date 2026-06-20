@@ -156,6 +156,13 @@ export const translations: Record<Language, any> = {
       draftRestored: "Brouillon restauré",
       draftDiscarded: "Brouillon supprimé",
 
+      // Public army permalink
+      copyLink: "Copier le lien",
+      linkCopied: "Lien copié dans le presse-papier",
+      linkCopyFailed: "Impossible de copier le lien",
+      backToGallery: "Retour à la galerie",
+      publicArmyNotFoundTitle: "Liste introuvable",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -325,6 +332,13 @@ export const translations: Record<Language, any> = {
       draftBannerDiscard: "Dismiss",
       draftRestored: "Draft restored",
       draftDiscarded: "Draft discarded",
+
+      // Public army permalink
+      copyLink: "Copy link",
+      linkCopied: "Link copied to clipboard",
+      linkCopyFailed: "Failed to copy link",
+      backToGallery: "Back to gallery",
+      publicArmyNotFoundTitle: "List not found",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",
