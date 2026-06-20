@@ -147,6 +147,15 @@ export const translations: Record<Language, any> = {
       // Recruit dialog : current roster banner
       currentRosterLabel: "Déjà dans votre armée",
 
+      // Auto-save draft banner
+      draftBannerTitle: "Composition non sauvegardée",
+      draftBannerBody: "Tu as un brouillon en cours, $1. Restaurer ?",
+      draftBannerNoName: "sans nom",
+      draftBannerRestore: "Restaurer",
+      draftBannerDiscard: "Ignorer",
+      draftRestored: "Brouillon restauré",
+      draftDiscarded: "Brouillon supprimé",
+
       // Roman Foederati ally
       foederatiSelectLabel: "Choisissez votre allié",
       foederatiSelectPlaceholder: "Sélectionner une faction du supplément",
@@ -307,6 +316,15 @@ export const translations: Record<Language, any> = {
 
       // Recruit dialog : current roster banner
       currentRosterLabel: "Already in your army",
+
+      // Auto-save draft banner
+      draftBannerTitle: "Unsaved composition",
+      draftBannerBody: "You have a draft in progress, $1. Restore it ?",
+      draftBannerNoName: "unnamed",
+      draftBannerRestore: "Restore",
+      draftBannerDiscard: "Dismiss",
+      draftRestored: "Draft restored",
+      draftDiscarded: "Draft discarded",
 
       // Roman Foederati ally
       foederatiSelectLabel: "Pick your ally",

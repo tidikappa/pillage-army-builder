@@ -47,6 +47,40 @@ interface LoadArmyState {
   };
 }
 
+// Local-storage draft : the builder auto-saves the in-progress army so the
+// user doesn't lose work on refresh / accidental close. Cleared on successful
+// Supabase save and on "Dissoudre".
+const DRAFT_KEY = "pillage_draft_v1";
+
+interface DraftPayload {
+  armyName: string;
+  selectedFactionId: string;
+  budget: number;
+  army: ArmyUnit[];
+}
+
+function readDraft(): DraftPayload | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftPayload;
+    const isEmpty =
+      !parsed.selectedFactionId && (!parsed.army || parsed.army.length === 0) && !parsed.armyName;
+    if (isEmpty) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // localStorage may be unavailable (private mode), silently ignore.
+  }
+}
+
 export function ArmyBuilder() {
   const { t, tData, language } = useTranslation();
   const { user } = useAuth();
@@ -61,13 +95,60 @@ export function ArmyBuilder() {
   const [editingId, setEditingId] = React.useState<string | undefined>(loadState?.id);
   const [saving, setSaving] = React.useState(false);
 
+  // Pending draft banner: set if a localStorage draft exists at mount and the
+  // user didn't explicitly load a list via navigation state.
+  const [draftToRestore, setDraftToRestore] = React.useState<DraftPayload | null>(() => {
+    if (loadState) return null;
+    return readDraft();
+  });
+
   React.useEffect(() => {
     if (loadState) {
+      // Loading from "Mes listes" / fork overrides any draft and clears it.
+      clearDraft();
+      setDraftToRestore(null);
       navigate(location.pathname, { replace: true, state: null });
       toast.info(`Liste "${loadState.armyName || "sans nom"}" chargée`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debounced auto-save to localStorage. Skipped while a draft restoration is
+  // pending so the user's choice on the banner isn't overwritten by an empty
+  // draft.
+  React.useEffect(() => {
+    if (draftToRestore) return;
+    const handle = setTimeout(() => {
+      const isEmpty = !selectedFactionId && army.length === 0 && !armyName;
+      if (isEmpty) {
+        clearDraft();
+        return;
+      }
+      try {
+        const payload: DraftPayload = { armyName, selectedFactionId, budget, army };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      } catch {
+        // Quota exceeded or private mode, ignore silently.
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [armyName, selectedFactionId, budget, army, draftToRestore]);
+
+  const restoreDraft = () => {
+    if (!draftToRestore) return;
+    setArmyName(draftToRestore.armyName);
+    setSelectedFactionId(draftToRestore.selectedFactionId);
+    setBudget(draftToRestore.budget);
+    setArmy(draftToRestore.army);
+    setDraftToRestore(null);
+    toast.success(t("draftRestored"));
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setDraftToRestore(null);
+    toast.info(t("draftDiscarded"));
+  };
 
   const selectedFaction = factions.find(f => f.id === selectedFactionId);
 
@@ -245,6 +326,7 @@ export function ArmyBuilder() {
     if (confirm(t("confirmReset"))) {
       setArmy([]);
       setEditingId(undefined);
+      clearDraft();
       toast.success(t("armyReset"));
     }
   };
@@ -286,6 +368,7 @@ export function ArmyBuilder() {
         toast.error(error.message);
         return;
       }
+      clearDraft();
       toast.success(publish ? "Liste publiée" : "Liste mise à jour");
     } else {
       const { data, error } = await supabase.from("armies").insert(payload).select("id").single();
@@ -295,6 +378,7 @@ export function ArmyBuilder() {
         return;
       }
       if (data) setEditingId(data.id as string);
+      clearDraft();
       toast.success(publish ? "Liste publiée dans la galerie" : "Liste sauvegardée");
     }
   };
@@ -525,6 +609,36 @@ export function ArmyBuilder() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-32">
+
+      {/* Auto-save : pending draft restoration */}
+      {draftToRestore && (
+        <div className="bg-[#0F5F5E] border-2 border-white/20 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex-1 text-white text-sm leading-relaxed">
+            <div className="font-bold uppercase tracking-widest text-xs mb-1">
+              {t("draftBannerTitle")}
+            </div>
+            <div className="opacity-90">
+              {t("draftBannerBody")
+                .replace("$1", draftToRestore.armyName || t("draftBannerNoName"))}
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              onClick={restoreDraft}
+              className="bg-white text-[#0F5F5E] hover:bg-stone-200 rounded-none px-4 font-bold uppercase tracking-widest text-xs"
+            >
+              {t("draftBannerRestore")}
+            </Button>
+            <Button
+              onClick={discardDraft}
+              variant="ghost"
+              className="text-white hover:bg-white/10 rounded-none px-4 font-bold uppercase tracking-widest text-xs"
+            >
+              {t("draftBannerDiscard")}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Intro (the logo + WIP badge live in the global header) */}
       <div className="flex flex-col items-center justify-center py-2 text-center space-y-2">
