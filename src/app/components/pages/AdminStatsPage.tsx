@@ -572,7 +572,7 @@ export function AdminStatsPage() {
                     <Link to={`/galerie/${r.army.id}`} target="_blank">
                       <Button
                         variant="ghost"
-                        className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                        className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         {t("statsReportView")}
@@ -582,7 +582,7 @@ export function AdminStatsPage() {
                   <Button
                     variant="ghost"
                     onClick={() => markReport(r.id, "reviewed")}
-                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
+                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent"
                   >
                     <Check className="w-3.5 h-3.5" />
                     {t("statsReportReviewed")}
@@ -590,7 +590,7 @@ export function AdminStatsPage() {
                   <Button
                     variant="ghost"
                     onClick={() => markReport(r.id, "dismissed")}
-                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-stone-100 hover:bg-stone-500/10 border border-transparent"
+                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-stone-100 hover:bg-stone-500/10 border border-transparent"
                   >
                     <X className="w-3.5 h-3.5" />
                     {t("statsReportIgnore")}
@@ -598,7 +598,7 @@ export function AdminStatsPage() {
                   <Button
                     variant="ghost"
                     onClick={() => deleteReportedArmy(r)}
-                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-transparent"
+                    className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-transparent"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     {t("statsReportDeleteArmy")}

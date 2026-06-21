@@ -268,7 +268,7 @@ export function MyListsPage() {
                     <Button
                       variant="ghost"
                       onClick={() => loadIntoBuilder(a)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
                       aria-label={t("ctaEdit")}
                     >
                       <Edit className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ export function MyListsPage() {
                     <Button
                       variant="ghost"
                       onClick={() => togglePublish(a)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
                       aria-label={a.is_public ? t("ctaUnpublish") : t("ctaPublish")}
                     >
                       {a.is_public ? <Lock className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
@@ -286,7 +286,7 @@ export function MyListsPage() {
                     <Button
                       variant="ghost"
                       onClick={() => remove(a.id)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-red-400 hover:bg-red-950/30 border border-transparent"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:text-red-400 hover:bg-red-950/30 border border-transparent"
                       aria-label={t("ctaDelete")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -295,7 +295,7 @@ export function MyListsPage() {
                     <Button
                       variant="ghost"
                       onClick={() => toggle(a.id)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
                       aria-label={isOpen ? t("ctaCollapse") : t("ctaExpand")}
                     >
                       {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

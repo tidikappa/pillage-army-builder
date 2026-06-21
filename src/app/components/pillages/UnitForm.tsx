@@ -617,7 +617,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {!editMode && (
       <DialogTrigger asChild>
-        <Button className="w-full h-16 text-lg gap-3 bg-[#cc6512] hover:bg-[#b0560f] text-white shadow-[0_0_25px_rgba(204,101,18,0.3)] border border-[#cc6512]/30 rounded-none group transition-all duration-300 hover:scale-[1.01]">
+        <Button className="w-full h-16 text-lg gap-3 bg-[#cc6512] hover:bg-[#b0560f] text-white shadow-[0_0_25px_rgba(204,101,18,0.3)] border border-[#cc6512]/30 rounded-none group transition-[transform,background,box-shadow] duration-200 ease-out hover:scale-[1.01] active:scale-[0.99]">
           <div className="bg-black/20 p-2 rounded-none group-hover:bg-black/30 transition-colors">
             <Plus className="w-6 h-6 text-white/90" />
           </div>
@@ -702,14 +702,14 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         onClick={() => handleUnitToggle(unit.id)}
                         type="button"
                         className={`
-                            group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-3 transition-all duration-300 focus:outline-none
+                            group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-3 transition-[border-color,background,transform] duration-180 ease-out focus:outline-none
                             ${isSelected 
                             ? "border-[#cc6512]/50 bg-[#cc6512]/10 shadow-[0_0_20px_rgba(204,101,18,0.15)] scale-[1.02]" 
                             : "border-white/5 hover:border-[#cc6512]/20 bg-[#1c1917]/60 hover:bg-[#2c2525]/60"}
                         `}
                         >
-                        <div className={`p-3 rounded-none transition-all duration-500 ${isSelected ? 'bg-[#cc6512]/20 shadow-inner' : 'bg-black/20 group-hover:bg-black/30'}`}>
-                            <Icon className={`w-8 h-8 transition-colors duration-300 ${isSelected ? 'text-[#cc6512] drop-shadow-[0_0_8px_rgba(204,101,18,0.5)]' : 'text-stone-500 group-hover:text-stone-300'}`} />
+                        <div className={`p-3 rounded-none transition-[background,box-shadow] duration-220 ease-out ${isSelected ? 'bg-[#cc6512]/20 shadow-inner' : 'bg-black/20 group-hover:bg-black/30'}`}>
+                            <Icon className={`w-8 h-8 transition-colors duration-180 ease-out ${isSelected ? 'text-[#cc6512] drop-shadow-[0_0_8px_rgba(204,101,18,0.5)]' : 'text-stone-500 group-hover:text-stone-300'}`} />
                         </div>
                         <span className={`font-serif font-bold text-sm uppercase tracking-wider text-center transition-colors ${isSelected ? 'text-[#cc6512]' : 'text-stone-400 group-hover:text-stone-200'}`}>{unitName}</span>
                         <div className={`mt-auto text-xs font-bold px-2 py-0.5 rounded-none ${isSelected ? 'bg-[#cc6512]/20 text-[#cc6512] border border-[#cc6512]/20' : 'text-stone-600 bg-black/20'}`}>
@@ -744,7 +744,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             type="button"
                             onClick={() => handleMercToggle(sourceFaction.id, unit.id)}
                             className={`
-                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-all duration-300 focus:outline-none
+                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-[border-color,background,transform] duration-180 ease-out focus:outline-none
                               ${isSelected
                                 ? "border-amber-500/60 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.18)] scale-[1.02]"
                                 : "border-white/5 hover:border-amber-500/30 bg-[#1c1917]/60 hover:bg-[#2c2525]/60"}
@@ -753,8 +753,8 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border ${isSelected ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-black/30 border-white/10 text-stone-500 group-hover:text-stone-300"}`}>
                               {factionName}
                             </span>
-                            <div className={`p-3 rounded-none transition-all duration-500 ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
-                              <Icon className={`w-7 h-7 transition-colors duration-300 ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
+                            <div className={`p-3 rounded-none transition-[background,box-shadow] duration-220 ease-out ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
+                              <Icon className={`w-7 h-7 transition-colors duration-180 ease-out ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
                             </div>
                             <span className={`font-serif font-bold text-sm uppercase tracking-wider text-center transition-colors ${isSelected ? "text-amber-300" : "text-stone-400 group-hover:text-stone-200"}`}>
                               {unitName}
@@ -790,7 +790,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             type="button"
                             onClick={() => handleMercToggle(sourceFaction.id, unit.id)}
                             className={`
-                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-all duration-300 focus:outline-none
+                              group relative cursor-pointer rounded-none border p-5 flex flex-col items-center gap-2 transition-[border-color,background,transform] duration-180 ease-out focus:outline-none
                               ${isSelected
                                 ? "border-amber-500/60 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.18)] scale-[1.02]"
                                 : "border-white/5 hover:border-amber-500/30 bg-[#1c1917]/60 hover:bg-[#2c2525]/60"}
@@ -799,8 +799,8 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border ${isSelected ? "bg-amber-500/20 border-amber-500/40 text-amber-300" : "bg-black/30 border-white/10 text-stone-500 group-hover:text-stone-300"}`}>
                               {factionName}
                             </span>
-                            <div className={`p-3 rounded-none transition-all duration-500 ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
-                              <Icon className={`w-7 h-7 transition-colors duration-300 ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
+                            <div className={`p-3 rounded-none transition-[background,box-shadow] duration-220 ease-out ${isSelected ? "bg-amber-500/20 shadow-inner" : "bg-black/20 group-hover:bg-black/30"}`}>
+                              <Icon className={`w-7 h-7 transition-colors duration-180 ease-out ${isSelected ? "text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" : "text-stone-500 group-hover:text-stone-300"}`} />
                             </div>
                             <span className={`font-serif font-bold text-sm uppercase tracking-wider text-center transition-colors ${isSelected ? "text-amber-300" : "text-stone-400 group-hover:text-stone-200"}`}>
                               {unitName}
@@ -817,7 +817,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                 )}
 
                 {selectedUnit && (
-                <div ref={optionsRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div ref={optionsRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                     
                     {['protection', 'melee', 'ranged'].map((type) => (
@@ -857,7 +857,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                     return (
                                     <div key={eq.id}
                                         onClick={() => handleEquipmentToggle(eq.id, type)}
-                                        className={`relative flex items-center justify-between p-3 rounded-none border cursor-pointer transition-all duration-200
+                                        className={`relative flex items-center justify-between p-3 rounded-none border cursor-pointer transition-[background,border-color] duration-160 ease-out
                                             ${isChecked ? "bg-[#cc6512]/10 border-[#cc6512]/30" : "bg-black/20 border-white/5 hover:bg-white/5 hover:border-white/10"}
                                         `}
                                     >
@@ -917,7 +917,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                                 return (
                                     <div key={eq.id} 
                                         onClick={() => handleEquipmentToggle(eq.id, type)}
-                                        className={`relative overflow-hidden flex flex-col justify-center p-3 rounded-none border cursor-pointer transition-all duration-200
+                                        className={`relative overflow-hidden flex flex-col justify-center p-3 rounded-none border cursor-pointer transition-[background,border-color] duration-160 ease-out
                                             ${isChecked ? "bg-[#cc6512]/10 border-[#cc6512]/30" : "bg-black/20 border-white/5 hover:bg-white/5 hover:border-white/10"}
                                         `}
                                     >
@@ -959,7 +959,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             return (
                             <div key={eq.id} 
                                 onClick={() => handleEquipmentToggle(eq.id, 'special')}
-                                className={`flex items-center justify-between p-3 rounded-none border cursor-pointer transition-all duration-200
+                                className={`flex items-center justify-between p-3 rounded-none border cursor-pointer transition-[background,border-color] duration-160 ease-out
                                     ${isChecked ? "bg-amber-950/20 border-amber-500/30" : "bg-black/20 border-white/5 hover:bg-white/5 hover:border-white/10"}
                                 `}
                             >
@@ -1007,8 +1007,8 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                             return (
                                 <div key={eq.id} 
                                     onClick={() => !disabled && handleEquipmentToggle(eq.id, 'talent')}
-                                    className={`flex flex-col border rounded-none p-4 transition-all
-                                    ${isSelected 
+                                    className={`flex flex-col border rounded-none p-4 transition-[background,border-color,box-shadow] duration-180 ease-out
+                                    ${isSelected
                                         ? "bg-purple-950/20 border-purple-500/40 shadow-[0_0_10px_rgba(147,51,234,0.1)] cursor-pointer" 
                                         : disabled 
                                             ? "opacity-40 bg-black/10 border-white/5 cursor-not-allowed" 
@@ -1117,7 +1117,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
                         <Button
                         onClick={handleSave}
                         disabled={needsFoederatiAlly}
-                        className="rounded-none px-8 font-bold tracking-wider shadow-lg transition-all bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="rounded-none px-8 font-bold tracking-wider shadow-lg transition-[transform,background] duration-160 ease-out bg-[#cc6512] hover:bg-[#b0560f] text-white hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
                         {t('recruit')}
                         </Button>

@@ -221,7 +221,7 @@ export function GalleryPage() {
       )}
 
       {compareSeed && (
-        <div className="sticky top-2 z-20 bg-[#0F5F5E] border-2 border-white/20 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(15,95,94,0.4)] backdrop-blur-md">
+        <div className="sticky top-2 z-20 bg-[#0F5F5E] border-2 border-white/20 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(15,95,94,0.4)] backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-200 ease-out">
           <div className="text-white text-sm inline-flex items-center gap-2">
             <Columns className="w-4 h-4 shrink-0" />
             <span className="font-bold uppercase tracking-widest text-xs">
@@ -390,7 +390,7 @@ export function GalleryPage() {
                     <Button
                       variant="ghost"
                       onClick={() => forkIntoBuilder(a)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
                       aria-label={t("forkInBuilder")}
                     >
                       <GitFork className="w-3.5 h-3.5" />
@@ -399,7 +399,7 @@ export function GalleryPage() {
                     <Button
                       variant="ghost"
                       onClick={() => copyArmyLink(a.id)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent"
                       aria-label={t("copyLink")}
                     >
                       <LinkIcon className="w-3.5 h-3.5" />
@@ -423,7 +423,7 @@ export function GalleryPage() {
                       <Button
                         variant="ghost"
                         onClick={() => adminDelete(a)}
-                        className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-transparent"
+                        className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-transparent"
                         aria-label="Supprimer en tant que modérateur"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -433,7 +433,7 @@ export function GalleryPage() {
                     <Button
                       variant="ghost"
                       onClick={() => toggle(a.id)}
-                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
+                      className="h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest text-stone-300 hover:text-[#cc6512] hover:bg-[#cc6512]/10 border border-transparent ml-auto"
                       aria-label={isOpen ? "Replier" : "Déplier"}
                     >
                       {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

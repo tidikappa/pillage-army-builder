@@ -21,6 +21,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { Input } from "../ui/input";
 import { UnitForm } from "./UnitForm";
 import { UnitCard } from "./UnitCard";
@@ -639,7 +640,7 @@ export function ArmyBuilder() {
 
       {/* Auto-save : pending draft restoration */}
       {draftToRestore && (
-        <div className="bg-[#0F5F5E] border-2 border-white/20 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+        <div className="bg-[#0F5F5E] border-2 border-white/20 px-5 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ease-out">
           <div className="flex-1 text-white text-sm leading-relaxed">
             <div className="font-bold uppercase tracking-widest text-xs mb-1">
               {t("draftBannerTitle")}
@@ -696,14 +697,14 @@ export function ArmyBuilder() {
                 placeholder={t('armyNamePlaceholder')}
                 value={armyName}
                 onChange={(e) => setArmyName(e.target.value)}
-                className="h-12 rounded-none bg-black/40 border-white/10 text-stone-200 focus:ring-[#cc6512]/50 focus:border-[#cc6512]/50 px-5 text-base font-medium transition-all hover:bg-black/60 placeholder:text-stone-600"
+                className="h-12 rounded-none bg-black/40 border-white/10 text-stone-200 focus:ring-[#cc6512]/50 focus:border-[#cc6512]/50 px-5 text-base font-medium transition-[background,border-color] duration-180 ease-out hover:bg-black/60 placeholder:text-stone-600"
               />
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-bold uppercase tracking-widest text-stone-500 pl-1">{t('factionLabel')}</label>
               <Select value={selectedFactionId} onValueChange={handleFactionChange}>
-                <SelectTrigger className="h-12 rounded-none bg-black/40 border-white/10 text-stone-200 focus:ring-[#cc6512]/50 focus:border-[#cc6512]/50 px-5 text-base font-medium transition-all hover:bg-black/60">
+                <SelectTrigger className="h-12 rounded-none bg-black/40 border-white/10 text-stone-200 focus:ring-[#cc6512]/50 focus:border-[#cc6512]/50 px-5 text-base font-medium transition-[background,border-color] duration-180 ease-out hover:bg-black/60">
                   <SelectValue placeholder={t('factionPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1c1917]/95 backdrop-blur-xl border-[#cc6512]/30 text-stone-200 rounded-none shadow-2xl">
@@ -735,7 +736,7 @@ export function ArmyBuilder() {
                     key={pts}
                     onClick={() => setBudget(pts)}
                     className={`
-                      px-3 py-1 rounded-none text-xs font-bold transition-all duration-300 border
+                      px-3 py-1 rounded-none text-xs font-bold transition-[background,border-color,color] duration-180 ease-out border
                       ${budget === pts 
                         ? "bg-[#cc6512] border-[#cc6512]/50 text-white shadow-[0_0_15px_rgba(204,101,18,0.4)] scale-105" 
                         : "bg-black/30 border-white/5 text-stone-500 hover:text-stone-300 hover:bg-white/5 hover:border-white/10"}
@@ -744,7 +745,7 @@ export function ArmyBuilder() {
                     {pts} PO
                   </button>
                 ))}
-                <div className="flex items-center bg-black/30 rounded-none border border-white/5 pl-4 pr-1 overflow-hidden focus-within:border-[#cc6512]/30 focus-within:ring-1 focus-within:ring-[#cc6512]/30 transition-all">
+                <div className="flex items-center bg-black/30 rounded-none border border-white/5 pl-4 pr-1 overflow-hidden focus-within:border-[#cc6512]/30 focus-within:ring-1 focus-within:ring-[#cc6512]/30 transition-[border-color,box-shadow] duration-180 ease-out">
                   <span className="text-xs text-stone-500 font-bold uppercase tracking-wider mr-2">{t('otherBudget')}</span>
                   <Input 
                     type="number" 
@@ -816,7 +817,7 @@ export function ArmyBuilder() {
 
       {/* Main Content */}
       {selectedFaction && (
-        <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+        <div className="space-y-8 animate-in fade-in duration-300 slide-in-from-bottom-2">
 
           {/* Special Rules Banner — torn-paper parchment with solid teal middle */}
           {selectedFaction.specialRules.length > 0 && (
@@ -886,7 +887,7 @@ export function ArmyBuilder() {
               sees it next to the army he's editing. */}
           {validationErrors.length > 0 && army.length > 0 && (
              <div
-               className="shadow-[0_0_20px_rgba(220,38,38,0.1)] p-6 min-h-[100px] flex flex-col justify-center"
+               className="shadow-[0_0_20px_rgba(220,38,38,0.1)] p-6 min-h-[100px] flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 ease-out"
                style={{ backgroundImage: `url(${redBanner})`, backgroundSize: '100% 100%' }}
              >
                <div className="flex items-center gap-2 mb-2 px-2">
@@ -910,7 +911,7 @@ export function ArmyBuilder() {
               <Button
                 onClick={() => handleSave(false)}
                 disabled={army.length === 0 || saving}
-                className="bg-stone-700 hover:bg-stone-600 text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-all"
+                className="bg-stone-700 hover:bg-stone-600 text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-[transform,background,box-shadow] duration-160 ease-out active:scale-[0.97]"
                 title={user ? t("save") : t("save")}
               >
                 <Save className="w-4 h-4 mr-2" />
@@ -919,7 +920,7 @@ export function ArmyBuilder() {
               <Button
                 onClick={() => handleSave(true)}
                 disabled={army.length === 0 || saving}
-                className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-all"
+                className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-[transform,background,box-shadow] duration-160 ease-out active:scale-[0.97]"
                 title={t("publish")}
               >
                 <Globe className="w-4 h-4 mr-2" />
@@ -928,7 +929,7 @@ export function ArmyBuilder() {
               <Button
                 onClick={handleExportPDF}
                 disabled={army.length === 0}
-                className="bg-[#cc6512] hover:bg-[#b0560f] text-white border border-[#cc6512]/20 shadow-[0_0_15px_rgba(204,101,18,0.2)] hover:shadow-[0_0_25px_rgba(204,101,18,0.4)] rounded-none px-8 font-bold tracking-wider transition-all hover:scale-105"
+                className="bg-[#cc6512] hover:bg-[#b0560f] text-white border border-[#cc6512]/20 shadow-[0_0_15px_rgba(204,101,18,0.2)] hover:shadow-[0_0_25px_rgba(204,101,18,0.4)] rounded-none px-8 font-bold tracking-wider transition-[transform,background,box-shadow] duration-160 ease-out active:scale-[0.97]"
               >
                 <Download className="w-5 h-5 mr-2 text-white" />
                 {t('exportPdf')}
@@ -973,7 +974,7 @@ export function ArmyBuilder() {
                 {/* Batch selection bar : appears as soon as the user ticks
                     at least one unit checkbox. */}
                 {selectedInstanceIds.size > 0 && (
-                  <div className="sticky top-2 z-20 bg-red-950/95 backdrop-blur-md border-2 border-red-500/70 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_25px_rgba(239,68,68,0.3)]">
+                  <div className="sticky top-2 z-20 bg-red-950/95 backdrop-blur-md border-2 border-red-500/70 px-4 py-3 flex items-center justify-between gap-3 shadow-[0_0_25px_rgba(239,68,68,0.3)] animate-in fade-in slide-in-from-top-2 duration-200 ease-out">
                     <div className="text-white text-sm font-bold uppercase tracking-widest inline-flex items-center gap-2">
                       <ShieldAlert className="w-4 h-4" />
                       {t("batchSelectedCount").replace("$1", selectedInstanceIds.size.toString())}
@@ -996,26 +997,36 @@ export function ArmyBuilder() {
                   </div>
                 )}
                 <div className="grid grid-cols-1 gap-4">
-                  {army.map((unit, idx) => (
-                      <UnitCard
-                      key={unit.instanceId}
-                      unit={unit}
-                      faction={selectedFaction}
-                      onRemove={handleRemoveUnit}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onUpdateUnit={handleUpdateUnit}
-                      onUpdateCustomName={handleUpdateCustomName}
-                      onUpdateCustomIcon={handleUpdateCustomIcon}
-                      onMoveUp={(id) => handleMoveUnit(id, -1)}
-                      onMoveDown={(id) => handleMoveUnit(id, 1)}
-                      canMoveUp={idx > 0}
-                      canMoveDown={idx < army.length - 1}
-                      dogHandlerActive={hasDogHandler}
-                      army={army}
-                      isSelected={selectedInstanceIds.has(unit.instanceId)}
-                      onToggleSelection={toggleUnitSelection}
-                      />
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {army.map((unit, idx) => (
+                      <motion.div
+                        key={unit.instanceId}
+                        layout
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                      >
+                        <UnitCard
+                          unit={unit}
+                          faction={selectedFaction}
+                          onRemove={handleRemoveUnit}
+                          onUpdateQuantity={handleUpdateQuantity}
+                          onUpdateUnit={handleUpdateUnit}
+                          onUpdateCustomName={handleUpdateCustomName}
+                          onUpdateCustomIcon={handleUpdateCustomIcon}
+                          onMoveUp={(id) => handleMoveUnit(id, -1)}
+                          onMoveDown={(id) => handleMoveUnit(id, 1)}
+                          canMoveUp={idx > 0}
+                          canMoveDown={idx < army.length - 1}
+                          dogHandlerActive={hasDogHandler}
+                          army={army}
+                          isSelected={selectedInstanceIds.has(unit.instanceId)}
+                          onToggleSelection={toggleUnitSelection}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
 
                 {/* Recap : PO consommés + figurines + seuil de moral */}

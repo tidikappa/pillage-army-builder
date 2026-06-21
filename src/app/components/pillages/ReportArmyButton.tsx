@@ -102,7 +102,7 @@ export function ReportArmyButton({ army }: { army: SavedArmy }) {
           }
           setOpen(true);
         }}
-        className={`h-8 px-2 rounded-none inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest border border-transparent ${
+        className={`h-8 px-2 rounded-none inline-flex items-center gap-1.5 transition-[transform,background,color] duration-160 ease-out active:scale-[0.97] text-[10px] font-bold uppercase tracking-widest border border-transparent ${
           alreadyReported
             ? "text-stone-600 cursor-not-allowed"
             : "text-stone-300 hover:text-red-400 hover:bg-red-500/10"
