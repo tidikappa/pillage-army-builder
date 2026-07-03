@@ -32,7 +32,7 @@ export function LoginPage() {
       toast.error(error);
       return;
     }
-    toast.success("Connecté");
+    toast.success(t("loginSuccess"));
   };
 
   return (
@@ -40,14 +40,14 @@ export function LoginPage() {
       <Card className="bg-black/70 border-white/15 text-stone-100 rounded-none shadow-2xl">
         <CardHeader className="border-b border-white/10">
           <CardTitle className="font-serif uppercase tracking-widest text-2xl text-[#cc6512] drop-shadow-[0_0_10px_rgba(204,101,18,0.4)]">
-            Connexion
+            {t("loginTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           <form onSubmit={onSubmit} className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="login-email" className="block text-sm font-bold uppercase tracking-widest text-stone-200">
-                Email
+                {t("emailLabel")}
               </label>
               <Input
                 id="login-email"
@@ -60,7 +60,7 @@ export function LoginPage() {
             </div>
             <div className="space-y-2">
               <label htmlFor="login-password" className="block text-sm font-bold uppercase tracking-widest text-stone-200">
-                Mot de passe
+                {t("passwordLabel")}
               </label>
               <Input
                 id="login-password"
@@ -76,7 +76,7 @@ export function LoginPage() {
               disabled={submitting}
               className="w-full h-11 bg-[#cc6512] hover:bg-[#b0560f] text-white rounded-none font-bold tracking-widest uppercase text-sm"
             >
-              {submitting ? "..." : "Se connecter"}
+              {submitting ? "..." : t("loginSubmit")}
             </Button>
             <p className="text-center pt-1">
               <Link
@@ -88,9 +88,9 @@ export function LoginPage() {
             </p>
           </form>
           <p className="text-base text-stone-200 mt-8 text-center">
-            Pas de compte ?{" "}
+            {t("loginNoAccount")}{" "}
             <Link to="/signup" className="text-[#cc6512] font-bold underline-offset-4 hover:underline">
-              Créer un compte
+              {t("loginToSignup")}
             </Link>
           </p>
         </CardContent>

@@ -111,6 +111,25 @@ export const translations: Record<Language, any> = {
       passwordUpdated: "Mot de passe mis à jour. Reconnecte-toi.",
       updatePasswordCta: "Mettre à jour",
 
+      // Login page
+      loginTitle: "Connexion",
+      loginSubmit: "Se connecter",
+      loginSuccess: "Connecté",
+      loginNoAccount: "Pas de compte ?",
+      loginToSignup: "Créer un compte",
+      emailLabel: "Email",
+      passwordLabel: "Mot de passe",
+
+      // Signup page
+      signupTitle: "Inscription",
+      signupSubmit: "Créer mon compte",
+      signupSuccess: "Compte créé. Vous pouvez maintenant vous connecter.",
+      signupPseudoLabel: "Pseudo",
+      signupPseudoPlaceholder: "Nom affiché dans la galerie",
+      signupHaveAccount: "Déjà un compte ?",
+      signupToLogin: "Se connecter",
+      passwordMinLength: "6 caractères minimum",
+
       // Moral threshold + figurines
       totalModelsLabel: "Figurines",
       moralThresholdLabel: "Seuil de moral",
@@ -367,6 +386,25 @@ export const translations: Record<Language, any> = {
       passwordsDoNotMatch: "Passwords do not match",
       passwordUpdated: "Password updated. Please log in again.",
       updatePasswordCta: "Update",
+
+      // Login page
+      loginTitle: "Log in",
+      loginSubmit: "Log in",
+      loginSuccess: "Logged in",
+      loginNoAccount: "No account yet?",
+      loginToSignup: "Create an account",
+      emailLabel: "Email",
+      passwordLabel: "Password",
+
+      // Signup page
+      signupTitle: "Sign up",
+      signupSubmit: "Create my account",
+      signupSuccess: "Account created. You can now log in.",
+      signupPseudoLabel: "Nickname",
+      signupPseudoPlaceholder: "Name shown in the gallery",
+      signupHaveAccount: "Already have an account?",
+      signupToLogin: "Log in",
+      passwordMinLength: "6 characters minimum",
 
       // Moral threshold + figurines
       totalModelsLabel: "Models",

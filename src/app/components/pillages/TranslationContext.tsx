@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { translations, Language } from './translations';
 
 interface TranslationContextType {
@@ -10,8 +10,37 @@ interface TranslationContextType {
 
 const TranslationContext = createContext<TranslationContextType | undefined>(undefined);
 
+const LANG_KEY = 'pillage_lang_v1';
+
+function readInitialLanguage(): Language {
+  try {
+    const stored = localStorage.getItem(LANG_KEY);
+    if (stored === 'fr' || stored === 'en') return stored;
+  } catch {
+    // localStorage disabled (private mode), fall through.
+  }
+  // Fallback to the browser preference, then FR.
+  if (typeof navigator !== 'undefined' && navigator.language?.startsWith('en')) return 'en';
+  return 'fr';
+}
+
 export const TranslationProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguage] = useState<Language>('fr');
+  const [language, setLanguageState] = useState<Language>(readInitialLanguage);
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    try {
+      localStorage.setItem(LANG_KEY, lang);
+    } catch {
+      // Ignore quota / private mode errors.
+    }
+  };
+
+  // Reflect the choice on <html lang> so screen readers and browser tooling
+  // pick up the correct locale.
+  useEffect(() => {
+    if (typeof document !== 'undefined') document.documentElement.lang = language;
+  }, [language]);
 
   const t = (key: string): string => {
     if (language === 'fr') {
