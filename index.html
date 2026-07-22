@@ -1,12 +1,18 @@
 
   <!DOCTYPE html>
-  <html lang="en">
+  <html lang="fr" translate="no">
     <head>
-      
+
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
       <title>Pillage Army Builder</title>
       <meta name="description" content="Builder d'armée pour le wargame Pillage : crée, sauvegarde et partage tes listes." />
+      <!-- The app ships its own FR/EN i18n. Browser auto-translation (Chrome
+           Google Translate) rewrites text nodes into <font> wrappers and caches
+           stale values, which desyncs live numbers (army costs) and mistranslates
+           labels ("Chef" -> "cuisinier"). Disable it and rely on the in-app
+           language selector instead. -->
+      <meta name="google" content="notranslate" />
       <meta name="robots" content="noindex, nofollow" />
       <meta name="theme-color" content="#cc6512" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
