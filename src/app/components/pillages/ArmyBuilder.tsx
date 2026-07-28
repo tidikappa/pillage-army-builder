@@ -20,7 +20,7 @@ import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe } from "lucide-react";
+import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe, Plus, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Input } from "../ui/input";
 import { UnitForm } from "./UnitForm";
@@ -201,6 +201,44 @@ export function ArmyBuilder() {
   const moralThreshold = Math.ceil(totalArmyModels / 2);
 
   const validationErrors = getValidationErrors();
+
+  // Talents currently present in the army, deduped by talent id with the
+  // list of units carrying each one. Used by the "Talents" tab in the
+  // faction-bonus reminder block.
+  const activeTalents = React.useMemo(() => {
+    if (!selectedFaction) return [] as { id: string; name: string; desc: string; carriers: string[] }[];
+    const seen = new Map<string, { id: string; name: string; desc: string; carriers: string[] }>();
+    army.forEach((unit) => {
+      const eff = getEffectiveFaction(unit, selectedFaction);
+      unit.equipment.forEach((eqId) => {
+        const eq = eff.availableEquipment.find((e) => e.id === eqId);
+        if (eq?.type !== "talent") return;
+        const name = tData("equipment", eq.id, eq.name);
+        const desc = tData("equipment", `${eq.id}_desc`, eq.description || "");
+        const carrier = getUnitDisplayName(unit, eff, language, tData);
+        const existing = seen.get(eq.id);
+        if (existing) {
+          if (!existing.carriers.includes(carrier)) existing.carriers.push(carrier);
+        } else {
+          seen.set(eq.id, { id: eq.id, name, desc, carriers: [carrier] });
+        }
+      });
+    });
+    return [...seen.values()];
+  }, [army, selectedFaction, language, tData]);
+
+  // Which tab is shown in the faction-bonus reminder block.
+  const [bonusTab, setBonusTab] = React.useState<"faction" | "talents">("faction");
+  // Accordion : which reminder items are expanded to show their full text.
+  const [expandedBonus, setExpandedBonus] = React.useState<Set<string>>(new Set());
+  const toggleBonusItem = (key: string) => {
+    setExpandedBonus((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const handleAddUnit = (unitTypeId: string, equipmentIds: string[], quantity: number, sourceFactionId?: string, foederatiAllyId?: string) => {
     const newTalents = equipmentIds.filter(id => 
@@ -596,10 +634,11 @@ export function ArmyBuilder() {
     });
 
     const finalY = (doc as any).lastAutoTable.finalY || currentY;
-    
+
+    // Shared cursor for the faction-bonus + talents sections.
+    let ruleY = finalY + 15;
+
     if (selectedFaction.specialRules.length > 0) {
-        let ruleY = finalY + 15;
-        
         if (ruleY > 270) {
             doc.addPage();
             ruleY = 20;
@@ -610,13 +649,43 @@ export function ArmyBuilder() {
         doc.text(t("factionBonus") + ":", 14, ruleY);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        
+
         ruleY += 6;
 
         selectedFaction.specialRules.forEach(rule => {
             // Translate the rule if possible
             const translatedRule = tData('factionRules', rule, rule);
             const splitText = doc.splitTextToSize(`- ${translatedRule}`, 180);
+            if (ruleY + (splitText.length * 5) > 280) {
+                doc.addPage();
+                ruleY = 20;
+            }
+            doc.text(splitText, 14, ruleY);
+            ruleY += (splitText.length * 5);
+        });
+    }
+
+    // Talents reminder, listed under the faction bonuses.
+    if (activeTalents.length > 0) {
+        ruleY += 8;
+        if (ruleY > 265) {
+            doc.addPage();
+            ruleY = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(t("talentsReminderTab") + ":", 14, ruleY);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        ruleY += 6;
+
+        activeTalents.forEach((talent) => {
+            const carriers = talent.carriers.length ? ` (${talent.carriers.join(", ")})` : "";
+            const line = talent.desc
+                ? `- ${talent.name}${carriers} : ${talent.desc}`
+                : `- ${talent.name}${carriers}`;
+            const splitText = doc.splitTextToSize(line, 180);
             if (ruleY + (splitText.length * 5) > 280) {
                 doc.addPage();
                 ruleY = 20;
@@ -820,7 +889,11 @@ export function ArmyBuilder() {
         <div className="space-y-8 animate-in fade-in duration-300 slide-in-from-bottom-2">
 
           {/* Special Rules Banner — torn-paper parchment with solid teal middle */}
-          {selectedFaction.specialRules.length > 0 && (
+          {(selectedFaction.specialRules.length > 0 || activeTalents.length > 0) && (() => {
+             // The Talents tab only exists when the army carries talents.
+             const showTalentsTab = activeTalents.length > 0;
+             const currentTab = showTalentsTab ? bonusTab : "faction";
+             return (
              <>
                <div className="relative drop-shadow-[0_4px_25px_rgba(15,95,94,0.25)]">
                  {/* Top torn edge */}
@@ -833,40 +906,132 @@ export function ArmyBuilder() {
 
                  {/* Solid teal middle — width matches the visible (non-transparent) area of the banner PNG (1312/1336 ≈ 98.2%, so 0.9% on each side). */}
                  <div className="bg-[#5BA5A4] mx-[0.9%]">
-                   {/* Header */}
+                   {/* Header : tabs when talents exist, otherwise a static title */}
                    <div className="flex items-center gap-3 px-10 pt-10 pb-4">
-                     <Flame className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)]" />
-                     <h3 className="text-white font-serif font-bold tracking-[0.25em] uppercase text-base drop-shadow">
-                       {t('factionBonus')}
-                     </h3>
-                     <span className="ml-auto text-[10px] uppercase tracking-widest text-white/70 font-bold">
-                       {selectedFaction.specialRules.length}
-                     </span>
+                     <Flame className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.5)] shrink-0" />
+                     {showTalentsTab ? (
+                       <div className="flex items-center gap-2 flex-wrap">
+                         <button
+                           type="button"
+                           onClick={() => setBonusTab("faction")}
+                           className={`font-serif font-bold tracking-[0.15em] uppercase text-sm px-3 py-1 rounded-none transition-colors duration-160 ease-out ${
+                             currentTab === "faction"
+                               ? "bg-white/20 text-white shadow-inner"
+                               : "text-white/60 hover:text-white/90"
+                           }`}
+                         >
+                           {t("factionBonus")}{" "}
+                           <span className="text-white/60">({selectedFaction.specialRules.length})</span>
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => setBonusTab("talents")}
+                           className={`font-serif font-bold tracking-[0.15em] uppercase text-sm px-3 py-1 rounded-none transition-colors duration-160 ease-out ${
+                             currentTab === "talents"
+                               ? "bg-white/20 text-white shadow-inner"
+                               : "text-white/60 hover:text-white/90"
+                           }`}
+                         >
+                           {t("talentsReminderTab")}{" "}
+                           <span className="text-white/60">({activeTalents.length})</span>
+                         </button>
+                       </div>
+                     ) : (
+                       <>
+                         <h3 className="text-white font-serif font-bold tracking-[0.25em] uppercase text-base drop-shadow">
+                           {t('factionBonus')}
+                         </h3>
+                         <span className="ml-auto text-[10px] uppercase tracking-widest text-white/70 font-bold">
+                           {selectedFaction.specialRules.length}
+                         </span>
+                       </>
+                     )}
                    </div>
 
                    {/* Decorative thin gradient divider under the header */}
                    <div className="mx-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
-                   {/* Rules list with thin dividers */}
-                   <ul className="px-10 pb-10 pt-4 divide-y divide-white/15">
-                   {selectedFaction.specialRules.map((rule, idx) => {
-                     const translated = tData('factionRules', rule, rule);
-                     const colonIdx = translated.indexOf(':');
-                     const hasTitle = colonIdx > 0 && colonIdx < 70;
-                     const title = hasTitle ? translated.slice(0, colonIdx).trim() : null;
-                     const desc = hasTitle ? translated.slice(colonIdx + 1).trim() : translated.trim();
-                     return (
-                       <li key={idx} className="py-3.5 first:pt-2">
-                         {title && (
-                           <div className="font-serif font-bold text-white uppercase tracking-widest text-sm mb-1 drop-shadow">
-                             {title}
-                           </div>
-                         )}
-                         <p className="text-white/95 text-sm leading-relaxed">{desc}</p>
-                       </li>
-                     );
-                   })}
-                   </ul>
+                   {currentTab === "faction" ? (
+                     /* Faction rules — collapsible: summary (title) + expand for full text */
+                     <ul className="px-10 pb-10 pt-4 divide-y divide-white/15">
+                     {selectedFaction.specialRules.map((rule, idx) => {
+                       const translated = tData('factionRules', rule, rule);
+                       const colonIdx = translated.indexOf(':');
+                       const hasTitle = colonIdx > 0 && colonIdx < 70;
+                       const title = hasTitle ? translated.slice(0, colonIdx).trim() : translated.trim();
+                       const desc = hasTitle ? translated.slice(colonIdx + 1).trim() : "";
+                       const key = `faction-${idx}`;
+                       const isOpen = expandedBonus.has(key);
+                       const hasDetail = desc.length > 0;
+                       return (
+                         <li key={idx} className="py-2.5 first:pt-1">
+                           <button
+                             type="button"
+                             onClick={() => hasDetail && toggleBonusItem(key)}
+                             className={`w-full flex items-start gap-2.5 text-left ${hasDetail ? "cursor-pointer" : "cursor-default"}`}
+                             aria-expanded={isOpen}
+                           >
+                             {hasDetail ? (
+                               <span className="mt-0.5 shrink-0 w-5 h-5 flex items-center justify-center border border-white/40 text-white transition-colors duration-160 ease-out hover:bg-white/15">
+                                 {isOpen ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                               </span>
+                             ) : (
+                               <span className="mt-0.5 shrink-0 w-5 h-5" aria-hidden="true" />
+                             )}
+                             <span className="font-serif font-bold text-white tracking-wide text-base drop-shadow leading-snug">
+                               {title}
+                             </span>
+                           </button>
+                           {hasDetail && isOpen && (
+                             <p className="text-white/95 text-sm leading-relaxed pl-[30px] pt-1.5 animate-in fade-in slide-in-from-top-1 duration-160">
+                               {desc}
+                             </p>
+                           )}
+                         </li>
+                       );
+                     })}
+                     </ul>
+                   ) : (
+                     /* Active talents — same collapsible pattern */
+                     <ul className="px-10 pb-10 pt-4 divide-y divide-white/15">
+                     {activeTalents.map((talent) => {
+                       const key = `talent-${talent.id}`;
+                       const isOpen = expandedBonus.has(key);
+                       const hasDetail = talent.desc.length > 0;
+                       return (
+                         <li key={talent.id} className="py-2.5 first:pt-1">
+                           <button
+                             type="button"
+                             onClick={() => hasDetail && toggleBonusItem(key)}
+                             className={`w-full flex items-start gap-2.5 text-left ${hasDetail ? "cursor-pointer" : "cursor-default"}`}
+                             aria-expanded={isOpen}
+                           >
+                             {hasDetail ? (
+                               <span className="mt-0.5 shrink-0 w-5 h-5 flex items-center justify-center border border-white/40 text-white transition-colors duration-160 ease-out hover:bg-white/15">
+                                 {isOpen ? <Minus className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                               </span>
+                             ) : (
+                               <span className="mt-0.5 shrink-0 w-5 h-5" aria-hidden="true" />
+                             )}
+                             <span className="flex items-baseline gap-2 flex-wrap min-w-0">
+                               <span className="font-serif font-bold text-white tracking-wide text-base drop-shadow leading-snug">
+                                 {talent.name}
+                               </span>
+                               <span className="text-[10px] uppercase tracking-widest text-white/70">
+                                 {talent.carriers.join(", ")}
+                               </span>
+                             </span>
+                           </button>
+                           {hasDetail && isOpen && (
+                             <p className="text-white/95 text-sm leading-relaxed pl-[30px] pt-1.5 animate-in fade-in slide-in-from-top-1 duration-160">
+                               {talent.desc}
+                             </p>
+                           )}
+                         </li>
+                       );
+                     })}
+                     </ul>
+                   )}
                  </div>
 
                  {/* Bottom torn edge */}
@@ -881,7 +1046,8 @@ export function ArmyBuilder() {
                  <img src={spearSeparator} alt="Separator" className="w-full max-w-2xl opacity-80" />
                </div>
              </>
-          )}
+             );
+          })()}
 
           {/* Validation errors panel, just above "Votre armée" so the player
               sees it next to the army he's editing. */}
