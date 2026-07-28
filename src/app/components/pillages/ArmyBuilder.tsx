@@ -978,7 +978,7 @@ export function ArmyBuilder() {
                              ) : (
                                <span className="mt-0.5 shrink-0 w-5 h-5" aria-hidden="true" />
                              )}
-                             <span className="font-serif font-bold text-white tracking-wide text-base drop-shadow leading-snug">
+                             <span className="font-sans font-bold text-white tracking-wide text-base drop-shadow leading-snug">
                                {title}
                              </span>
                            </button>
@@ -1014,7 +1014,7 @@ export function ArmyBuilder() {
                                <span className="mt-0.5 shrink-0 w-5 h-5" aria-hidden="true" />
                              )}
                              <span className="flex items-baseline gap-2 flex-wrap min-w-0">
-                               <span className="font-serif font-bold text-white tracking-wide text-base drop-shadow leading-snug">
+                               <span className="font-sans font-bold text-white tracking-wide text-base drop-shadow leading-snug">
                                  {talent.name}
                                </span>
                                <span className="text-[10px] uppercase tracking-widest text-white/70">
