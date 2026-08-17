@@ -602,7 +602,11 @@ export function ArmyBuilder() {
       const isMerc = Boolean(unit.sourceFactionId && unit.sourceFactionId !== selectedFaction.id);
       const mercSuffix = isMerc ? ` [${tData("factions", effective.id, effective.name)}]` : "";
 
-      return ["", `${displayName} (x${qty})${mercSuffix}`, descriptionParts.join("\n"), `${singleCost * qty} po`];
+      const costCell = qty > 1
+        ? `${singleCost * qty} po\n(${singleCost} po/u)`
+        : `${singleCost} po`;
+
+      return ["", `${displayName} (x${qty})${mercSuffix}`, descriptionParts.join("\n"), costCell];
     });
 
     autoTable(doc, {
