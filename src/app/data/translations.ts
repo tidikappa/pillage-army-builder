@@ -150,8 +150,8 @@ export const dataTranslations: Record<string, Record<string, string>> = {
   mel_spear: { fr: "Lance", en: "Spear" },
   weapon_spear: { fr: "Lance", en: "Spear" },
 
-  mel_base: { fr: "Arme de base", en: "Base Weapon" },
-  weapon_base: { fr: "Arme de base", en: "Base Weapon" },
+  mel_base: { fr: "Arme de base", en: "Hand Weapon" },
+  weapon_base: { fr: "Arme de base", en: "Hand Weapon" },
   
   weapon_sabre: { fr: "Sabre", en: "Saber" },
 
@@ -209,7 +209,7 @@ export function tData(id: string, originalName: string, lang: Language): string 
     'Bouclier': 'Shield',
     'Sans protection': 'No Protection',
     'Lance': 'Spear',
-    'Arme de base': 'Base Weapon',
+    'Arme de base': 'Hand Weapon',
     'Hache danoise': 'Danish Axe',
     'Cheval': 'Horse',
     'Bannière': 'Banner',
