@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { supabase, isSupabaseConfigured, SavedArmy } from "../../lib/supabase";
-import { factions, ArmyUnit } from "../../data/gameData";
+import { factions, ArmyUnit, isCommandUnit } from "../../data/gameData";
 import { useAuth } from "../../lib/AuthContext";
 import { useTranslation } from "../pillages/TranslationContext";
 import { ArmyView } from "../pillages/ArmyView";
@@ -18,6 +18,7 @@ import {
   Coins,
   Calendar,
   AlertTriangle,
+  EyeOff,
 } from "lucide-react";
 import { validateArmy } from "../pillages/validation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -199,8 +200,16 @@ export function MyListsPage() {
         {filtered.map((a) => {
           const faction = factions.find((f) => f.id === a.faction_id);
           const isOpen = expanded.has(a.id);
+          const units = a.units as ArmyUnit[];
           const violationCount = faction
-            ? validateArmy(a.units as ArmyUnit[], faction, t).length
+            ? validateArmy(units, faction, t).length
+            : 0;
+          const fogHiddenCount = a.fog_enabled
+            ? units.filter(
+                (u) =>
+                  (u.hidden && !isCommandUnit(u)) ||
+                  (u.hiddenEquipment && u.hiddenEquipment.length > 0)
+              ).length
             : 0;
           return (
             <li key={a.id}>
@@ -233,6 +242,14 @@ export function MyListsPage() {
                             <Lock className="w-3 h-3" /> Privée
                           </span>
                         )}
+                        {a.fog_enabled && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest px-2 py-0.5 bg-sky-400/10 border border-sky-400/40 text-sky-300 font-bold"
+                            title={t("fogTitle")}
+                          >
+                            <EyeOff className="w-3 h-3" /> {t("fogTitle")} {a.fog_percent ?? 20}%
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm font-bold uppercase tracking-widest text-[#cc6512] mt-1">
                         {faction ? tData("factions", faction.id, faction.name) : a.faction_id}
@@ -242,6 +259,12 @@ export function MyListsPage() {
                           <Calendar className="w-3.5 h-3.5 text-stone-400" />
                           {new Date(a.created_at).toLocaleDateString()}
                         </span>
+                        {a.fog_enabled && fogHiddenCount > 0 && (
+                          <span className="inline-flex items-center gap-1.5 text-sky-300">
+                            <EyeOff className="w-3.5 h-3.5" />
+                            {t("fogSavedHidden").replace("$1", String(fogHiddenCount))}
+                          </span>
+                        )}
                       </div>
                       {violationCount > 0 && (
                         <div className="mt-3 inline-flex items-center gap-1.5 px-2 py-1 bg-red-950/50 border border-red-700/50 text-red-200 text-[11px] font-bold uppercase tracking-widest">
