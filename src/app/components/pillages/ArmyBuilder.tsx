@@ -718,6 +718,7 @@ export function ArmyBuilder() {
       dogHandler: boolean;
       talents: { name: string; desc: string; carriers: string[] }[];
       boldRows?: boolean[];
+      unidentified?: { po: number; pct: number; maxPct: number; over: boolean };
     }) => {
       let currentY = 20;
       doc.setTextColor(0, 0, 0);
@@ -755,6 +756,25 @@ export function ArmyBuilder() {
         14,
         currentY
       );
+
+      // Anti-cheat line on the revealed copy : how much of the budget is
+      // concealed, so the opponent can confirm it stays under the agreed cap.
+      if (opts.unidentified) {
+        currentY += 6;
+        doc.setFont("helvetica", "bold");
+        if (opts.unidentified.over) doc.setTextColor(200, 0, 0);
+        else doc.setTextColor(2, 132, 199);
+        doc.text(
+          t("pdfFogUnidentified")
+            .replace("$1", String(opts.unidentified.po))
+            .replace("$2", String(opts.unidentified.pct))
+            .replace("$3", String(opts.unidentified.maxPct)),
+          14,
+          currentY
+        );
+        doc.setTextColor(0, 0, 0);
+        doc.setFont("helvetica", "normal");
+      }
 
       currentY += 10;
 
@@ -893,6 +913,9 @@ export function ArmyBuilder() {
         0
       );
       const revealedModels = visibleArmy.reduce((s, u) => s + (u.quantity || 1), 0);
+      // Everything the opponent can't see = total army minus the visible list.
+      const unidentifiedPo = Math.max(0, currentPoints - revealedPoints);
+      const unidentifiedPct = budget > 0 ? Math.round((unidentifiedPo / budget) * 1000) / 10 : 0;
       renderListSection({
         title: baseTitle,
         subtitle: t("pdfFogRevealed"),
@@ -903,6 +926,12 @@ export function ArmyBuilder() {
         markHidden: false,
         dogHandler: revealedDog,
         talents: collectTalents(visibleArmy),
+        unidentified: {
+          po: unidentifiedPo,
+          pct: unidentifiedPct,
+          maxPct: fogPercent,
+          over: unidentifiedPo > fogCap,
+        },
       });
     }
 
