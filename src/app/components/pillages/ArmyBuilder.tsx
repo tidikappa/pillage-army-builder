@@ -12,6 +12,7 @@ import {
   armyHasDogHandlerTalent,
   unitCarriesWarDogs,
   DOG_HANDLER_BONUS_PER_MODEL,
+  isCommandUnit,
 } from "../../data/gameData";
 import { getUnitDisplayIcon, getUnitDisplayName } from "./unitNaming";
 import { validateArmy } from "./validation";
@@ -20,9 +21,10 @@ import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe, Plus, Minus } from "lucide-react";
+import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe, Plus, Minus, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Input } from "../ui/input";
+import { Switch } from "../ui/switch";
 import { UnitForm } from "./UnitForm";
 import { UnitCard } from "./UnitCard";
 import { toast } from "sonner";
@@ -45,6 +47,8 @@ interface LoadArmyState {
     factionId: string;
     budget: number;
     units: ArmyUnit[];
+    fogEnabled?: boolean;
+    fogPercent?: number;
   };
 }
 
@@ -58,7 +62,12 @@ interface DraftPayload {
   selectedFactionId: string;
   budget: number;
   army: ArmyUnit[];
+  fogEnabled?: boolean;
+  fogPercent?: number;
 }
+
+const FOG_PERCENT_PRESETS = [10, 15, 20, 25];
+const DEFAULT_FOG_PERCENT = 20;
 
 function readDraft(): DraftPayload | null {
   try {
@@ -96,6 +105,10 @@ export function ArmyBuilder() {
   const [editingId, setEditingId] = React.useState<string | undefined>(loadState?.id);
   const [saving, setSaving] = React.useState(false);
 
+  // "Fog of war" variant.
+  const [fogEnabled, setFogEnabled] = React.useState<boolean>(loadState?.fogEnabled ?? false);
+  const [fogPercent, setFogPercent] = React.useState<number>(loadState?.fogPercent ?? DEFAULT_FOG_PERCENT);
+
   // Pending draft banner: set if a localStorage draft exists at mount and the
   // user didn't explicitly load a list via navigation state.
   const [draftToRestore, setDraftToRestore] = React.useState<DraftPayload | null>(() => {
@@ -126,14 +139,14 @@ export function ArmyBuilder() {
         return;
       }
       try {
-        const payload: DraftPayload = { armyName, selectedFactionId, budget, army };
+        const payload: DraftPayload = { armyName, selectedFactionId, budget, army, fogEnabled, fogPercent };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
       } catch {
         // Quota exceeded or private mode, ignore silently.
       }
     }, 500);
     return () => clearTimeout(handle);
-  }, [armyName, selectedFactionId, budget, army, draftToRestore]);
+  }, [armyName, selectedFactionId, budget, army, fogEnabled, fogPercent, draftToRestore]);
 
   const restoreDraft = () => {
     if (!draftToRestore) return;
@@ -141,6 +154,8 @@ export function ArmyBuilder() {
     setSelectedFactionId(draftToRestore.selectedFactionId);
     setBudget(draftToRestore.budget);
     setArmy(draftToRestore.army);
+    setFogEnabled(draftToRestore.fogEnabled ?? false);
+    setFogPercent(draftToRestore.fogPercent ?? DEFAULT_FOG_PERCENT);
     setDraftToRestore(null);
     toast.success(t("draftRestored"));
   };
@@ -155,7 +170,9 @@ export function ArmyBuilder() {
 
   const hasDogHandler = armyHasDogHandlerTalent(army);
 
-  const computeUnitCost = (unit: ArmyUnit): number => {
+  // Cost of a single model. `dogHandler` is passed explicitly so the revealed
+  // (fog) list can recompute costs against the visible-only army.
+  const computeUnitCostWith = (unit: ArmyUnit, dogHandler: boolean): number => {
     if (!selectedFaction) return 0;
     const effective = getEffectiveFaction(unit, selectedFaction);
     const unitType = effective.units.find((u) => u.id === unit.unitTypeId);
@@ -169,11 +186,13 @@ export function ArmyBuilder() {
       }
     });
     // "Éducateur canin" talent : +10 po per model carrying War Dogs.
-    if (hasDogHandler && unitCarriesWarDogs(unit)) {
+    if (dogHandler && unitCarriesWarDogs(unit)) {
       cost += DOG_HANDLER_BONUS_PER_MODEL;
     }
     return cost;
   };
+
+  const computeUnitCost = (unit: ArmyUnit): number => computeUnitCostWith(unit, hasDogHandler);
 
   const calculateTotalPoints = () => {
     if (!selectedFaction) return 0;
@@ -201,6 +220,68 @@ export function ArmyBuilder() {
   const moralThreshold = Math.ceil(totalArmyModels / 2);
 
   const validationErrors = getValidationErrors();
+
+  // --- Fog of war ---------------------------------------------------------
+  // A unit is effectively hidden only if flagged AND not a command model
+  // (command models must always stay visible to the opponent).
+  const isUnitHidden = (u: ArmyUnit): boolean => Boolean(u.hidden) && !isCommandUnit(u);
+
+  // Talent equipment ids hidden on an otherwise-visible unit.
+  const hiddenTalentsOf = (u: ArmyUnit): string[] => {
+    if (!selectedFaction || isUnitHidden(u)) return [];
+    const eff = getEffectiveFaction(u, selectedFaction);
+    return (u.hiddenEquipment ?? []).filter((eqId) =>
+      eff.availableEquipment.find((e) => e.id === eqId)?.type === "talent"
+    );
+  };
+
+  // The list stripped of everything hidden : hidden units removed, hidden
+  // talents removed from the units that stay. Used for the revealed PDF.
+  const visibleArmy = React.useMemo(() => {
+    if (!fogEnabled) return army;
+    return army
+      .filter((u) => !isUnitHidden(u))
+      .map((u) => {
+        const hidden = hiddenTalentsOf(u);
+        return hidden.length
+          ? { ...u, equipment: u.equipment.filter((id) => !hidden.includes(id)) }
+          : u;
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [army, fogEnabled, selectedFaction]);
+
+  const hiddenPoints = React.useMemo(() => {
+    if (!fogEnabled || !selectedFaction) return 0;
+    return army.reduce((sum, u) => {
+      const qty = u.quantity || 1;
+      if (isUnitHidden(u)) return sum + computeUnitCost(u) * qty;
+      const eff = getEffectiveFaction(u, selectedFaction);
+      const talentCost = hiddenTalentsOf(u).reduce((s, eqId) => {
+        const eq = eff.availableEquipment.find((e) => e.id === eqId);
+        const c = eq?.costs[u.unitTypeId as UnitRole];
+        return s + (typeof c === "number" ? c : 0);
+      }, 0);
+      return sum + talentCost * qty;
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [army, fogEnabled, selectedFaction, hasDogHandler]);
+
+  // Strict cap : hidden po must stay ≤ floor(budget × fog%). "Even if it
+  // doesn't round cleanly" → you can't exceed the exact fractional value.
+  const fogCap = Math.floor((budget * fogPercent) / 100);
+  const hasHidden = fogEnabled && hiddenPoints > 0;
+
+  const fogViolations: string[] = [];
+  if (fogEnabled && hiddenPoints > fogCap) {
+    fogViolations.push(
+      t("err_fogCapExceeded")
+        .replace("$1", String(hiddenPoints))
+        .replace("$2", String(fogCap))
+        .replace("$3", String(fogPercent))
+    );
+  }
+
+  const allViolations = [...validationErrors, ...fogViolations];
 
   // Talents currently present in the army, deduped by talent id with the
   // list of units carrying each one. Used by the "Talents" tab in the
@@ -360,6 +441,11 @@ export function ArmyBuilder() {
       }
     }
 
+    const willBeCommand =
+      unitTypeId === "warlord" ||
+      equipmentIds.includes("spec_banner") ||
+      equipmentIds.includes("spec_horn");
+
     setArmy(army.map(u => u.instanceId === instanceId ? {
       ...u,
       unitTypeId: unitTypeId as UnitRole,
@@ -367,6 +453,10 @@ export function ArmyBuilder() {
       quantity: quantity,
       sourceFactionId: sourceFactionId && sourceFactionId !== selectedFactionId ? sourceFactionId : undefined,
       foederatiAllyId: foederatiAllyId || undefined,
+      // Fog : a command model can never stay hidden; drop hidden-talent ids
+      // that no longer belong to the unit after the edit.
+      hidden: willBeCommand ? false : u.hidden,
+      hiddenEquipment: (u.hiddenEquipment ?? []).filter((id) => equipmentIds.includes(id)),
     } : u));
     toast.success(t("unitUpdated"));
   };
@@ -377,6 +467,25 @@ export function ArmyBuilder() {
 
   const handleUpdateCustomIcon = (instanceId: string, customIconId: string | undefined) => {
     setArmy(army.map(u => u.instanceId === instanceId ? { ...u, customIconId } : u));
+  };
+
+  const handleToggleHidden = (instanceId: string) => {
+    setArmy(army.map(u =>
+      u.instanceId === instanceId
+        ? (isCommandUnit(u) ? u : { ...u, hidden: !u.hidden })
+        : u
+    ));
+  };
+
+  const handleToggleHiddenEquipment = (instanceId: string, equipmentId: string) => {
+    setArmy(army.map(u => {
+      if (u.instanceId !== instanceId) return u;
+      const cur = u.hiddenEquipment ?? [];
+      const next = cur.includes(equipmentId)
+        ? cur.filter(x => x !== equipmentId)
+        : [...cur, equipmentId];
+      return { ...u, hiddenEquipment: next.length ? next : undefined };
+    }));
   };
 
   const handleMoveUnit = (instanceId: string, direction: -1 | 1) => {
@@ -425,6 +534,8 @@ export function ArmyBuilder() {
       budget,
       units: army,
       is_public: publish,
+      fog_enabled: fogEnabled,
+      fog_percent: fogPercent,
     };
 
     if (editingId) {
@@ -514,190 +625,287 @@ export function ArmyBuilder() {
     if (!selectedFaction) return;
     const doc = new jsPDF();
 
-    let currentY = 20;
-    doc.setFontSize(20);
-    doc.text(armyName || "Liste d'armée - Pillage", 14, currentY);
-
-    currentY += 10;
-    doc.setFontSize(12);
-    const factionName = tData("factions", selectedFaction.id, selectedFaction.name);
-    doc.text(`Faction: ${factionName}`, 14, currentY);
-
-    currentY += 6;
-    const pointsText = `${t("spent")}: ${currentPoints} / ${budget} po`;
-    doc.text(pointsText, 14, currentY);
-
-    if (isOverBudget) {
-      doc.setTextColor(200, 0, 0);
-      doc.text(language === "fr" ? "ATTENTION : Budget dépassé" : "WARNING: Over budget", 100, currentY);
-      doc.setTextColor(0, 0, 0);
-    }
-
-    currentY += 6;
-    doc.text(
-      `${t("totalModelsLabel")}: ${totalArmyModels}   ·   ${t("pdfMoralSummary")}: ${moralThreshold}`,
-      14,
-      currentY
+    // Pre-render an icon PNG for every unit, keyed by instance id so both the
+    // complete and the revealed tables reuse the same images.
+    const iconEntries = await Promise.all(
+      army.map(async (u) => [u.instanceId, await renderUnitIcon(u)] as const)
     );
+    const iconByInstance = new Map<string, string | null>(iconEntries);
 
-    currentY += 10;
-
-    if (validationErrors.length > 0) {
-      doc.setTextColor(200, 0, 0);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text(t("restrictionsViolated") + ":", 14, currentY);
-      currentY += 6;
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      validationErrors.forEach((err) => {
-        const splitText = doc.splitTextToSize(`- ${err}`, 180);
-        doc.text(splitText, 14, currentY);
-        currentY += splitText.length * 5;
+    // Talents present in a given list, deduped by id with their carriers.
+    const collectTalents = (list: ArmyUnit[]) => {
+      const seen = new Map<string, { name: string; desc: string; carriers: string[] }>();
+      list.forEach((unit) => {
+        const eff = getEffectiveFaction(unit, selectedFaction);
+        unit.equipment.forEach((eqId) => {
+          const eq = eff.availableEquipment.find((e) => e.id === eqId);
+          if (eq?.type !== "talent") return;
+          const name = tData("equipment", eq.id, eq.name);
+          const desc = tData("equipment", `${eq.id}_desc`, eq.description || "");
+          const carrier = getUnitDisplayName(unit, eff, language, tData);
+          const existing = seen.get(eq.id);
+          if (existing) {
+            if (!existing.carriers.includes(carrier)) existing.carriers.push(carrier);
+          } else {
+            seen.set(eq.id, { name, desc, carriers: [carrier] });
+          }
+        });
       });
+      return [...seen.values()];
+    };
+
+    const buildTableData = (list: ArmyUnit[], dogHandler: boolean, markHidden: boolean) =>
+      list.map((unit) => {
+        const effective = getEffectiveFaction(unit, selectedFaction);
+        const unitType = effective.units.find((u) => u.id === unit.unitTypeId);
+        if (!unitType) return ["", "", "", ""];
+        const hiddenTalents = markHidden ? hiddenTalentsOf(unit) : [];
+        const equipment = unit.equipment
+          .map((id) => effective.availableEquipment.find((e) => e.id === id))
+          .filter(Boolean);
+        const formatEquip = (e: any) => {
+          const cost = e.costs[unit.unitTypeId as UnitRole];
+          const equipName = tData("equipment", e.id, e.name);
+          const tag = hiddenTalents.includes(e.id) ? ` [${t("fogHiddenMarker")}]` : "";
+          return `${equipName}${cost ? ` (${cost} po)` : ""}${tag}`;
+        };
+
+        const getCategoryString = (type: string) =>
+          equipment.filter((e) => e?.type === type).map(formatEquip).join(", ");
+
+        const protection = getCategoryString("protection");
+        const melee = getCategoryString("melee");
+        const ranged = getCategoryString("ranged");
+        const special = getCategoryString("special");
+        const talent = getCategoryString("talent");
+
+        const descriptionParts: string[] = [];
+        if (protection) descriptionParts.push(`${t("protectionLabel")}: ${protection}`);
+        if (melee) descriptionParts.push(`${t("meleeLabel")}: ${melee}`);
+        if (ranged) descriptionParts.push(`${t("rangedLabel")}: ${ranged}`);
+        if (special) descriptionParts.push(`${t("pdfSpecialLabel")}: ${special}`);
+        if (talent) descriptionParts.push(`${t("pdfTalentsLabel")}: ${talent}`);
+
+        let singleCost = unitType.baseCost;
+        equipment.forEach((e) => {
+          if (e) singleCost += (e.costs[unit.unitTypeId as UnitRole] || 0) as number;
+        });
+        if (dogHandler && unitCarriesWarDogs(unit)) singleCost += DOG_HANDLER_BONUS_PER_MODEL;
+        const qty = unit.quantity || 1;
+
+        const displayName = getUnitDisplayName(unit, effective, language, tData);
+        const isMerc = Boolean(unit.sourceFactionId && unit.sourceFactionId !== selectedFaction.id);
+        const mercSuffix = isMerc ? ` [${tData("factions", effective.id, effective.name)}]` : "";
+        const hiddenSuffix = markHidden && isUnitHidden(unit) ? ` — ${t("pdfFogHiddenTag")}` : "";
+
+        const costCell = qty > 1
+          ? `${singleCost * qty} po\n(${singleCost} po/u)`
+          : `${singleCost} po`;
+
+        return ["", `${displayName} (x${qty})${mercSuffix}${hiddenSuffix}`, descriptionParts.join("\n"), costCell];
+      });
+
+    // Renders one full list section (title, summary, violations, unit table,
+    // faction bonuses + talents). Returns nothing; the caller adds pages.
+    const renderListSection = (opts: {
+      title: string;
+      subtitle?: string;
+      list: ArmyUnit[];
+      points: number;
+      models: number;
+      violations: string[];
+      markHidden: boolean;
+      dogHandler: boolean;
+      talents: { name: string; desc: string; carriers: string[] }[];
+      boldRows?: boolean[];
+    }) => {
+      let currentY = 20;
       doc.setTextColor(0, 0, 0);
-      currentY += 5;
-    }
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text(opts.title, 14, currentY);
+      doc.setFont("helvetica", "normal");
 
-    // Pre-render an icon PNG for every unit.
-    const iconDataUrls = await Promise.all(army.map((u) => renderUnitIcon(u)));
+      if (opts.subtitle) {
+        currentY += 7;
+        doc.setFontSize(11);
+        doc.setTextColor(120, 120, 120);
+        doc.text(opts.subtitle, 14, currentY);
+        doc.setTextColor(0, 0, 0);
+        currentY += 9;
+      } else {
+        currentY += 10;
+      }
 
-    const tableData = army.map((unit) => {
-      const effective = getEffectiveFaction(unit, selectedFaction);
-      const unitType = effective.units.find((u) => u.id === unit.unitTypeId);
-      if (!unitType) return ["", "", "", ""];
-      const equipment = unit.equipment
-        .map((id) => effective.availableEquipment.find((e) => e.id === id))
-        .filter(Boolean);
-      const formatEquip = (e: any) => {
-        const cost = e.costs[unit.unitTypeId as UnitRole];
-        const equipName = tData("equipment", e.id, e.name);
-        return `${equipName}${cost ? ` (${cost} po)` : ""}`;
-      };
+      doc.setFontSize(12);
+      const factionName = tData("factions", selectedFaction.id, selectedFaction.name);
+      doc.text(`Faction: ${factionName}`, 14, currentY);
 
-      const getCategoryString = (type: string) =>
-        equipment.filter((e) => e?.type === type).map(formatEquip).join(", ");
+      currentY += 6;
+      doc.text(`${t("spent")}: ${opts.points} / ${budget} po`, 14, currentY);
+      if (opts.points > budget) {
+        doc.setTextColor(200, 0, 0);
+        doc.text(language === "fr" ? "ATTENTION : Budget dépassé" : "WARNING: Over budget", 100, currentY);
+        doc.setTextColor(0, 0, 0);
+      }
 
-      const protection = getCategoryString("protection");
-      const melee = getCategoryString("melee");
-      const ranged = getCategoryString("ranged");
-      const special = getCategoryString("special");
-      const talent = getCategoryString("talent");
+      currentY += 6;
+      doc.text(
+        `${t("totalModelsLabel")}: ${opts.models}   ·   ${t("pdfMoralSummary")}: ${Math.ceil(opts.models / 2)}`,
+        14,
+        currentY
+      );
 
-      const descriptionParts: string[] = [];
-      if (protection) descriptionParts.push(`${t("protectionLabel")}: ${protection}`);
-      if (melee) descriptionParts.push(`${t("meleeLabel")}: ${melee}`);
-      if (ranged) descriptionParts.push(`${t("rangedLabel")}: ${ranged}`);
-      if (special) descriptionParts.push(`${t("pdfSpecialLabel")}: ${special}`);
-      if (talent) descriptionParts.push(`${t("pdfTalentsLabel")}: ${talent}`);
+      currentY += 10;
 
-      let singleCost = unitType.baseCost;
-      equipment.forEach((e) => {
-        if (e) singleCost += (e.costs[unit.unitTypeId as UnitRole] || 0) as number;
+      if (opts.violations.length > 0) {
+        doc.setTextColor(200, 0, 0);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text(t("restrictionsViolated") + ":", 14, currentY);
+        currentY += 6;
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        opts.violations.forEach((err) => {
+          const splitText = doc.splitTextToSize(`- ${err}`, 180);
+          doc.text(splitText, 14, currentY);
+          currentY += splitText.length * 5;
+        });
+        doc.setTextColor(0, 0, 0);
+        currentY += 5;
+      }
+
+      const iconUrls = opts.list.map((u) => iconByInstance.get(u.instanceId) ?? null);
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [["", t("pdfUnit"), t("pdfEquipment"), t("pdfCost")]],
+        body: buildTableData(opts.list, opts.dogHandler, opts.markHidden),
+        theme: "striped",
+        headStyles: { fillColor: [180, 83, 9] },
+        columnStyles: {
+          0: { cellWidth: 14, halign: "center" },
+          1: { cellWidth: 50 },
+          3: { cellWidth: 22, halign: "right" },
+        },
+        didParseCell: (data) => {
+          if (data.section !== "body") return;
+          if (opts.boldRows?.[data.row.index]) data.cell.styles.fontStyle = "bold";
+        },
+        didDrawCell: (data) => {
+          if (data.section !== "body") return;
+          if (data.column.index !== 0) return;
+          const dataUrl = iconUrls[data.row.index];
+          if (!dataUrl) return;
+          const padding = 1.5;
+          const size = Math.max(0, Math.min(data.cell.height - padding * 2, 10));
+          const x = data.cell.x + (data.cell.width - size) / 2;
+          const y = data.cell.y + (data.cell.height - size) / 2;
+          try {
+            doc.addImage(dataUrl, "PNG", x, y, size, size);
+          } catch {
+            /* swallow — icon is decorative */
+          }
+        },
       });
-      const qty = unit.quantity || 1;
 
-      const displayName = getUnitDisplayName(unit, effective, language, tData);
-      const isMerc = Boolean(unit.sourceFactionId && unit.sourceFactionId !== selectedFaction.id);
-      const mercSuffix = isMerc ? ` [${tData("factions", effective.id, effective.name)}]` : "";
+      let ruleY = ((doc as any).lastAutoTable.finalY || currentY) + 15;
 
-      const costCell = qty > 1
-        ? `${singleCost * qty} po\n(${singleCost} po/u)`
-        : `${singleCost} po`;
-
-      return ["", `${displayName} (x${qty})${mercSuffix}`, descriptionParts.join("\n"), costCell];
-    });
-
-    autoTable(doc, {
-      startY: currentY,
-      head: [["", t("pdfUnit"), t("pdfEquipment"), t("pdfCost")]],
-      body: tableData,
-      theme: "striped",
-      headStyles: { fillColor: [180, 83, 9] },
-      columnStyles: {
-        0: { cellWidth: 14, halign: "center" },
-        1: { cellWidth: 50 },
-        3: { cellWidth: 22, halign: "right" },
-      },
-      didDrawCell: (data) => {
-        if (data.section !== "body") return;
-        if (data.column.index !== 0) return;
-        const dataUrl = iconDataUrls[data.row.index];
-        if (!dataUrl) return;
-        const padding = 1.5;
-        const size = Math.max(0, Math.min(data.cell.height - padding * 2, 10));
-        const x = data.cell.x + (data.cell.width - size) / 2;
-        const y = data.cell.y + (data.cell.height - size) / 2;
-        try {
-          doc.addImage(dataUrl, "PNG", x, y, size, size);
-        } catch {
-          /* swallow — icon is decorative */
-        }
-      },
-    });
-
-    const finalY = (doc as any).lastAutoTable.finalY || currentY;
-
-    // Shared cursor for the faction-bonus + talents sections.
-    let ruleY = finalY + 15;
-
-    if (selectedFaction.specialRules.length > 0) {
+      if (selectedFaction.specialRules.length > 0) {
         if (ruleY > 270) {
-            doc.addPage();
-            ruleY = 20;
+          doc.addPage();
+          ruleY = 20;
         }
-
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(t("factionBonus") + ":", 14, ruleY);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-
         ruleY += 6;
-
-        selectedFaction.specialRules.forEach(rule => {
-            // Translate the rule if possible
-            const translatedRule = tData('factionRules', rule, rule);
-            const splitText = doc.splitTextToSize(`- ${translatedRule}`, 180);
-            if (ruleY + (splitText.length * 5) > 280) {
-                doc.addPage();
-                ruleY = 20;
-            }
-            doc.text(splitText, 14, ruleY);
-            ruleY += (splitText.length * 5);
-        });
-    }
-
-    // Talents reminder, listed under the faction bonuses.
-    if (activeTalents.length > 0) {
-        ruleY += 8;
-        if (ruleY > 265) {
+        selectedFaction.specialRules.forEach((rule) => {
+          const translatedRule = tData("factionRules", rule, rule);
+          const splitText = doc.splitTextToSize(`- ${translatedRule}`, 180);
+          if (ruleY + splitText.length * 5 > 280) {
             doc.addPage();
             ruleY = 20;
-        }
+          }
+          doc.text(splitText, 14, ruleY);
+          ruleY += splitText.length * 5;
+        });
+      }
 
+      if (opts.talents.length > 0) {
+        ruleY += 8;
+        if (ruleY > 265) {
+          doc.addPage();
+          ruleY = 20;
+        }
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
         doc.text(t("talentsReminderTab") + ":", 14, ruleY);
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         ruleY += 6;
-
-        activeTalents.forEach((talent) => {
-            const carriers = talent.carriers.length ? ` (${talent.carriers.join(", ")})` : "";
-            const line = talent.desc
-                ? `- ${talent.name}${carriers} : ${talent.desc}`
-                : `- ${talent.name}${carriers}`;
-            const splitText = doc.splitTextToSize(line, 180);
-            if (ruleY + (splitText.length * 5) > 280) {
-                doc.addPage();
-                ruleY = 20;
-            }
-            doc.text(splitText, 14, ruleY);
-            ruleY += (splitText.length * 5);
+        opts.talents.forEach((talent) => {
+          const carriers = talent.carriers.length ? ` (${talent.carriers.join(", ")})` : "";
+          const line = talent.desc
+            ? `- ${talent.name}${carriers} : ${talent.desc}`
+            : `- ${talent.name}${carriers}`;
+          const splitText = doc.splitTextToSize(line, 180);
+          if (ruleY + splitText.length * 5 > 280) {
+            doc.addPage();
+            ruleY = 20;
+          }
+          doc.text(splitText, 14, ruleY);
+          ruleY += splitText.length * 5;
         });
+      }
+    };
+
+    const baseTitle = armyName || "Liste d'armée - Pillage";
+
+    // Complete list (reference). When fog is active, hidden units are grouped
+    // at the end and rendered in bold so they stand out.
+    const completeList = hasHidden
+      ? [...army.filter((u) => !isUnitHidden(u)), ...army.filter((u) => isUnitHidden(u))]
+      : army;
+
+    renderListSection({
+      title: baseTitle,
+      subtitle: hasHidden ? t("pdfFogComplete") : undefined,
+      list: completeList,
+      points: currentPoints,
+      models: totalArmyModels,
+      violations: allViolations,
+      markHidden: hasHidden,
+      dogHandler: hasDogHandler,
+      talents: collectTalents(army),
+      boldRows: hasHidden ? completeList.map((u) => isUnitHidden(u)) : undefined,
+    });
+
+    // Revealed list (opponent copy) : only produced when something is hidden.
+    if (hasHidden) {
+      doc.addPage();
+      const revealedDog = armyHasDogHandlerTalent(visibleArmy);
+      const revealedPoints = visibleArmy.reduce(
+        (s, u) => s + computeUnitCostWith(u, revealedDog) * (u.quantity || 1),
+        0
+      );
+      const revealedModels = visibleArmy.reduce((s, u) => s + (u.quantity || 1), 0);
+      renderListSection({
+        title: baseTitle,
+        subtitle: t("pdfFogRevealed"),
+        list: visibleArmy,
+        points: revealedPoints,
+        models: revealedModels,
+        violations: [],
+        markHidden: false,
+        dogHandler: revealedDog,
+        talents: collectTalents(visibleArmy),
+      });
     }
+
     const slug = (s: string) =>
       s.trim().toLowerCase()
         .normalize("NFD").replace(/\p{Diacritic}/gu, "")
@@ -892,6 +1100,64 @@ export function ArmyBuilder() {
       {selectedFaction && (
         <div className="space-y-8 animate-in fade-in duration-300 slide-in-from-bottom-2">
 
+          {/* Fog of war : toggle + agreed hidden cap + live readout */}
+          <div className="bg-[#1c1917]/80 border border-white/10 rounded-none p-5 sm:p-6 space-y-4 shadow-lg backdrop-blur-sm">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <EyeOff className="w-5 h-5 text-sky-300 mt-0.5 shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-white font-serif font-bold tracking-wide uppercase text-sm">{t("fogTitle")}</span>
+                    <span className="text-[9px] uppercase tracking-widest text-sky-300/90 font-bold border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5">
+                      {t("fogBeta")}
+                    </span>
+                  </div>
+                  <p className="text-stone-400 text-xs leading-relaxed max-w-2xl mt-1">{t("fogHint")}</p>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold">{t("fogEnableLabel")}</span>
+                <Switch checked={fogEnabled} onCheckedChange={setFogEnabled} />
+              </label>
+            </div>
+
+            {fogEnabled && (
+              <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-4 justify-between animate-in fade-in slide-in-from-top-1 duration-160">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] uppercase tracking-widest text-stone-400 font-bold mr-1">{t("fogMaxLabel")}</span>
+                  {FOG_PERCENT_PRESETS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setFogPercent(p)}
+                      className={`px-3 py-1 rounded-none text-xs font-bold transition-[background,border-color,color] duration-160 ease-out border ${
+                        fogPercent === p
+                          ? "bg-sky-500 border-sky-400/60 text-white shadow-[0_0_12px_rgba(56,189,248,0.4)] scale-105"
+                          : "bg-black/30 border-white/5 text-stone-500 hover:text-stone-300 hover:bg-white/5 hover:border-white/10"
+                      }`}
+                    >
+                      {p}%
+                    </button>
+                  ))}
+                  <div className="flex items-center bg-black/30 rounded-none border border-white/5 pl-3 pr-1 focus-within:border-sky-400/40">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={fogPercent}
+                      onChange={(e) => setFogPercent(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+                      className="w-14 border-none bg-transparent h-8 focus-visible:ring-0 text-right pr-1 text-stone-200 font-bold"
+                    />
+                    <span className="text-xs text-stone-500 font-bold">%</span>
+                  </div>
+                </div>
+                <div className={`text-sm font-bold tabular-nums ${hiddenPoints > fogCap ? "text-red-400" : "text-sky-300"}`}>
+                  {t("fogHiddenReadout")} : {hiddenPoints} / {fogCap} po
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Special Rules Banner — torn-paper parchment with solid teal middle */}
           {(selectedFaction.specialRules.length > 0 || activeTalents.length > 0) && (() => {
              // The Talents tab only exists when the army carries talents.
@@ -1055,7 +1321,7 @@ export function ArmyBuilder() {
 
           {/* Validation errors panel, just above "Votre armée" so the player
               sees it next to the army he's editing. */}
-          {validationErrors.length > 0 && army.length > 0 && (
+          {allViolations.length > 0 && army.length > 0 && (
              <div
                className="shadow-[0_0_20px_rgba(220,38,38,0.1)] p-6 min-h-[100px] flex flex-col justify-center animate-in fade-in slide-in-from-top-2 duration-200 ease-out"
                style={{ backgroundImage: `url(${redBanner})`, backgroundSize: '100% 100%' }}
@@ -1065,7 +1331,7 @@ export function ArmyBuilder() {
                   <h4 className="font-serif font-bold tracking-wider text-white uppercase">{t('restrictionsViolated')}</h4>
                </div>
                <ul className="list-disc pl-9 space-y-1.5 text-sm font-medium text-white px-2">
-                 {validationErrors.map((error, idx) => (
+                 {allViolations.map((error, idx) => (
                    <li key={idx}>{error}</li>
                  ))}
                </ul>
@@ -1193,6 +1459,9 @@ export function ArmyBuilder() {
                           army={army}
                           isSelected={selectedInstanceIds.has(unit.instanceId)}
                           onToggleSelection={toggleUnitSelection}
+                          fogEnabled={fogEnabled}
+                          onToggleHidden={handleToggleHidden}
+                          onToggleHiddenEquipment={handleToggleHiddenEquipment}
                         />
                       </motion.div>
                     ))}

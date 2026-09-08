@@ -106,6 +106,8 @@ export function PublicArmyPage() {
           factionId: army.faction_id,
           budget: army.budget,
           units: army.units as ArmyUnit[],
+          fogEnabled: army.fog_enabled ?? false,
+          fogPercent: army.fog_percent ?? 20,
         },
       },
     });

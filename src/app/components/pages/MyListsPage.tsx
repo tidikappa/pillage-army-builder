@@ -122,6 +122,8 @@ export function MyListsPage() {
           budget: army.budget,
           units: army.units as ArmyUnit[],
           id: army.id,
+          fogEnabled: army.fog_enabled ?? false,
+          fogPercent: army.fog_percent ?? 20,
         },
       },
     });

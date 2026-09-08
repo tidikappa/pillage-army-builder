@@ -26,4 +26,8 @@ export type SavedArmy = {
   units: unknown;
   is_public: boolean;
   created_at: string;
+  /** "Fog of war" variant : whether the list uses partial concealment. */
+  fog_enabled?: boolean;
+  /** Max share of the budget (in %) allowed to be hidden. */
+  fog_percent?: number;
 };

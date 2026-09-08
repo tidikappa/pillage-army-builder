@@ -114,6 +114,8 @@ export function GalleryPage() {
           factionId: a.faction_id,
           budget: a.budget,
           units: a.units as ArmyUnit[],
+          fogEnabled: a.fog_enabled ?? false,
+          fogPercent: a.fog_percent ?? 20,
           // No `id` → saved as a new entry, the original is untouched.
         },
       },

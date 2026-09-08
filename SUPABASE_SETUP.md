@@ -457,7 +457,29 @@ Le hook front `usePageViewTracking` insère un row à chaque change de
 Les UUID des permalink `/galerie/:id` sont remplacés par `:id` pour
 garder une cardinalité basse sur les paths.
 
-## 10. (Optionnel) Désactiver la confirmation email
+## 10. Brouillard de guerre (depuis v1.28.0)
+
+Variante de jeu à liste partiellement dévoilée. Deux colonnes s'ajoutent à la
+table `armies` pour mémoriser la config brouillard d'une liste (l'état caché de
+chaque unité/talent vit déjà dans le JSON `units`, rien à faire pour lui).
+
+```sql
+alter table public.armies
+  add column if not exists fog_enabled boolean not null default false,
+  add column if not exists fog_percent integer not null default 20;
+```
+
+Les policies RLS existantes sur `armies` couvrent ces colonnes (elles font
+partie de la ligne), aucune nouvelle policy n'est nécessaire.
+
+Côté app : le plafond « max caché » se calcule sur le budget
+(`floor(budget × fog_percent / 100)`), le total caché doit rester en dessous.
+Les chefs, porteurs de bannière et de cor ne peuvent jamais être cachés (mais
+leurs talents oui). À l'export, si au moins un élément est caché, le PDF sort
+deux listes : une complète (référence) et une dévoilée à présenter à
+l'adversaire.
+
+## 11. (Optionnel) Désactiver la confirmation email
 
 Pour les tests locaux, dans **Authentication → Providers → Email**, désactiver
 "Confirm email" pour que les inscriptions soient immédiatement valides.

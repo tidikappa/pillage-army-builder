@@ -1,4 +1,33 @@
+import React from "react";
 import { Shield, Sword, Crosshair, Zap, Skull, User, Heart, Crown, Activity, Flag, Megaphone, PawPrint, TreeDeciduous, Wind, Wine, Target, Cross, FlaskConical, Timer, Eye, Flame, UserPlus } from "lucide-react";
+
+// Custom chariot icon : a two-wheeled cart with a draught pole. Built like the
+// other bespoke icons so its glyph fills the 24×24 box as much as the Lucide
+// ones (the previous Activity glyph read visibly smaller).
+export const ChariotIcon = ({ className = "", ...props }: React.SVGProps<SVGSVGElement>) =>
+  React.createElement(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      className,
+      ...props,
+    },
+    // Cab (open at the back) sitting on the platform.
+    React.createElement("path", { d: "M4 14 V8 h7 l3 6" }),
+    // Platform / axle beam.
+    React.createElement("path", { d: "M3 14 h13" }),
+    // Draught pole reaching towards the horse.
+    React.createElement("path", { d: "M14 11 L22 8" }),
+    // Wheels.
+    React.createElement("circle", { cx: "7", cy: "17", r: "3" }),
+    React.createElement("circle", { cx: "14.5", cy: "17", r: "3" }),
+  );
 
 export type EquipmentType = 'protection' | 'melee' | 'ranged' | 'special' | 'talent';
 
@@ -76,7 +105,7 @@ const unitTemplates: Record<UnitRole, { name: string, icon: any }> = {
   berserker: { name: 'Berserker', icon: Skull },
   huscarl: { name: 'Huscarl', icon: Shield },
   healer: { name: 'Soigneur', icon: Heart },
-  chariot: { name: 'Chariot', icon: Activity },
+  chariot: { name: 'Chariot', icon: ChariotIcon },
 };
 
 // --- DATA ENTRY ---
@@ -1022,6 +1051,18 @@ export interface ArmyUnit {
    * and equipment.
    */
   customIconId?: string;
+  /**
+   * "Fog of war" variant : when true, the whole unit is hidden from the
+   * opponent-facing (revealed) list. Command models (warlord, banner or horn
+   * carriers) can never be hidden — see isCommandUnit().
+   */
+  hidden?: boolean;
+  /**
+   * "Fog of war" variant : talent equipment ids hidden individually on an
+   * otherwise-visible unit (the model is on the table, the talent is a
+   * surprise). Only talent ids are ever stored here.
+   */
+  hiddenEquipment?: string[];
 }
 
 /**
@@ -1079,5 +1120,20 @@ export function getFoederatiAllyId(army: ArmyUnit[]): string | null {
 export function getFoederatiAllyCandidates(): Faction[] {
   return factions.filter(
     (f) => f.supplement === 'finis_imperii' && !ROMAN_FACTION_IDS.includes(f.id)
+  );
+}
+
+/**
+ * "Fog of war" variant : command models can never be hidden. A unit counts as
+ * a command model when it is a warlord, or carries a banner or a war horn.
+ */
+export const BANNER_EQUIPMENT_ID = 'spec_banner';
+export const HORN_EQUIPMENT_ID = 'spec_horn';
+
+export function isCommandUnit(unit: ArmyUnit): boolean {
+  return (
+    unit.unitTypeId === 'warlord' ||
+    unit.equipment.includes(BANNER_EQUIPMENT_ID) ||
+    unit.equipment.includes(HORN_EQUIPMENT_ID)
   );
 }

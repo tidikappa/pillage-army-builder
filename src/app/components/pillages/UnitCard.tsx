@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Trash2, Shield, Sword, Crosshair, Zap, Plus, Minus, Sparkles, Pencil, Check, X, ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
 import {
   ArmyUnit,
   Faction,
@@ -11,6 +11,7 @@ import {
   getEffectiveFaction,
   unitCarriesWarDogs,
   DOG_HANDLER_BONUS_PER_MODEL,
+  isCommandUnit,
 } from "../../data/gameData";
 import { useTranslation } from "./TranslationContext";
 import { UnitForm } from "./UnitForm";
@@ -43,11 +44,15 @@ interface UnitCardProps {
   /** Batch-selection state. When set, a checkbox is rendered on the card. */
   isSelected?: boolean;
   onToggleSelection?: (instanceId: string) => void;
+  /** "Fog of war" : when on, the card shows hide controls for the unit and its talents. */
+  fogEnabled?: boolean;
+  onToggleHidden?: (instanceId: string) => void;
+  onToggleHiddenEquipment?: (instanceId: string, equipmentId: string) => void;
 }
 
 import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.png";
 
-export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army, isSelected = false, onToggleSelection }: UnitCardProps) {
+export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army, isSelected = false, onToggleSelection, fogEnabled = false, onToggleHidden, onToggleHiddenEquipment }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -63,6 +68,12 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
   };
 
   const equipment = getEquipment(unit.equipment);
+
+  // Fog of war state for this card.
+  const isCommand = isCommandUnit(unit);
+  const unitHidden = fogEnabled && Boolean(unit.hidden) && !isCommand;
+  const hiddenTalentSet = new Set(unit.hiddenEquipment ?? []);
+  const talentItems = equipment.filter((e) => e.type === "talent");
 
   const singleUnitCost =
     unitType.baseCost +
@@ -103,10 +114,14 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                 const isDogs = e.id === 'spec_dogs';
                 const dogSuffix = isDogs ? ` ×${dogHandlerActive ? 4 : 3}` : '';
                 const dogBonus = isDogs && dogHandlerActive;
+                const talentHidden = fogEnabled && e.type === 'talent' && hiddenTalentSet.has(e.id);
                 return (
                   <React.Fragment key={e.id}>
                     {idx > 0 && ", "}
-                    {eName}{dogSuffix}
+                    <span className={talentHidden ? "text-sky-500/70 line-through decoration-sky-500/50" : undefined}>{eName}{dogSuffix}</span>
+                    {talentHidden && (
+                      <span className="text-sky-400 normal-case font-bold ml-1">({t('fogHiddenMarker')})</span>
+                    )}
                     {cost ? (
                       <>
                         {" ("}
@@ -132,7 +147,7 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
     <Card
         className={`group relative overflow-hidden border-0 bg-transparent rounded-none shadow-lg transition-all ${
           isSelected ? "ring-2 ring-red-500/70 shadow-[0_0_20px_rgba(239,68,68,0.25)]" : ""
-        }`}
+        } ${unitHidden ? "ring-2 ring-sky-400/60 shadow-[0_0_20px_rgba(56,189,248,0.2)]" : ""}`}
         style={{ backgroundImage: `url(${containerBg})`, backgroundSize: '100% 100%' }}
     >
       <CardContent className="p-8 pl-10">
@@ -287,6 +302,11 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                           x{quantity}
                         </span>
                       )}
+                      {unitHidden && (
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest px-2 py-0.5 bg-sky-500/15 border border-sky-400/40 text-sky-300 font-bold font-sans">
+                          <EyeOff className="w-3 h-3" /> {t('fogUnitHidden')}
+                        </span>
+                      )}
                       {onUpdateCustomName && (
                         <button
                           type="button"
@@ -382,6 +402,66 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
             </div>
           </div>
         </div>
+
+        {/* Fog of war controls */}
+        {fogEnabled && (
+          <div className="mt-5 pt-4 border-t border-dashed border-sky-400/25">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[10px] uppercase tracking-widest font-bold text-sky-300">
+                {t("fogSectionLabel")} :
+              </span>
+              {isCommand ? (
+                <span className="text-[10px] uppercase tracking-wider text-stone-500 font-medium inline-flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" /> {t("fogCommandLocked")}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onToggleHidden?.(unit.instanceId)}
+                  aria-pressed={Boolean(unit.hidden)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-[11px] font-bold uppercase tracking-wider border transition-colors ${
+                    unit.hidden
+                      ? "bg-sky-500 border-sky-400 text-white"
+                      : "bg-black/30 border-white/10 text-stone-300 hover:border-sky-400/50 hover:text-sky-200"
+                  }`}
+                >
+                  {unit.hidden ? (
+                    <><Eye className="w-3.5 h-3.5" /> {t("fogUnitReveal")}</>
+                  ) : (
+                    <><EyeOff className="w-3.5 h-3.5" /> {t("fogUnitHide")}</>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {!unitHidden && talentItems.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase tracking-wider text-stone-500 font-medium w-full sm:w-auto">
+                  {t("fogTalentHideHint")}
+                </span>
+                {talentItems.map((e) => {
+                  const on = hiddenTalentSet.has(e.id);
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => onToggleHiddenEquipment?.(unit.instanceId, e.id)}
+                      aria-pressed={on}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-none text-[11px] font-bold border transition-colors ${
+                        on
+                          ? "bg-sky-500 border-sky-400 text-white"
+                          : "bg-black/30 border-white/10 text-stone-300 hover:border-sky-400/50 hover:text-sky-200"
+                      }`}
+                    >
+                      {on ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      {tData("equipment", e.id, e.name)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
 
