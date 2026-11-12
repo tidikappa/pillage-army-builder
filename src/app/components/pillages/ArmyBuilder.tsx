@@ -21,7 +21,7 @@ import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe, Plus, Minus, EyeOff } from "lucide-react";
+import { AlertTriangle, Download, RotateCcw, ShieldAlert, Wallet, Trophy, Flame, Save, Globe, Plus, Minus, EyeOff, FileJson } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Input } from "../ui/input";
 import { Switch } from "../ui/switch";
@@ -945,6 +945,39 @@ export function ArmyBuilder() {
     toast.success(t("pdfDownloaded"));
   };
 
+  const handleExportJSON = () => {
+    if (!selectedFaction) return;
+    const slug = (s: string) =>
+      s.trim().toLowerCase()
+        .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "armee";
+
+    // Self-contained snapshot of the list, re-importable later.
+    const data = {
+      app: "pillage-army-builder",
+      schema: 1,
+      appVersion: __APP_VERSION__,
+      exportedAt: new Date().toISOString(),
+      armyName: armyName || "",
+      factionId: selectedFactionId,
+      budget,
+      fogEnabled,
+      fogPercent,
+      units: army,
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug(armyName || "armee")}_${slug(tData("factions", selectedFaction.id, selectedFaction.name))}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(t("jsonDownloaded"));
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-32">
 
@@ -1398,6 +1431,15 @@ export function ArmyBuilder() {
               >
                 <Download className="w-5 h-5 mr-2 text-white" />
                 {t('exportPdf')}
+              </Button>
+              <Button
+                onClick={handleExportJSON}
+                disabled={army.length === 0}
+                className="bg-stone-700 hover:bg-stone-600 text-white border border-white/10 rounded-none px-6 font-bold tracking-wider transition-[transform,background,box-shadow] duration-160 ease-out active:scale-[0.97]"
+                title={t('exportJson')}
+              >
+                <FileJson className="w-4 h-4 mr-2" />
+                {t('exportJson')}
               </Button>
               <Button
                 variant="ghost"
