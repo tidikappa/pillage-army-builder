@@ -75,6 +75,25 @@ Chrome réécrivait les nœuds texte et désynchronisait les coûts. Ne pas réa
 - Rewrite SPA fallback + en-têtes de sécurité (HSTS, X-Frame-Options DENY, CSP). La CSP autorise Supabase (`*.supabase.co`, `wss:`) et Google Fonts ; l'élargir si on ajoute un domaine externe.
 - PWA via `vite-plugin-pwa` (service worker autoUpdate + manifest, configuré dans `vite.config.ts`).
 
+## Accès & secrets
+Aucun secret n'est versionné dans le repo (volontaire). Un nouveau contributeur (ou
+Claude) ne peut donc pas interroger la DB ni déployer l'Edge Function sans accès fourni
+par le porteur du projet.
+- **Dev local** : `.env.local` (gitignored) contient `VITE_SUPABASE_URL` et
+  `VITE_SUPABASE_ANON_KEY`. L'anon key **ne peut pas** lire `auth.users` ni les données
+  protégées par RLS d'autres utilisateurs.
+- **Prod** : les variables d'env vivent dans les settings du projet Vercel.
+- **Projet Supabase** : ref `labyhfhewidrnfwjcraj`.
+- **Lire des données admin** (ex. nombre de comptes = `total_users` du RPC
+  `get_admin_stats`) : se connecter en admin dans l'app puis `/admin/stats`, ou via le
+  dashboard Supabase (Authentication > Users). Les RPC admin sont `SECURITY DEFINER` et
+  exigent une session dont `app_metadata.role === "admin"`.
+- **Accès DB en CLI** : le binaire `supabase` est installé mais le projet n'est pas lié ;
+  il faut un `SUPABASE_ACCESS_TOKEN` (`supabase login` ou variable d'env) fourni par le
+  porteur. La service-role key se trouve dans le dashboard Supabase (Settings > API).
+- Ne jamais manipuler ces credentials à la place de l'utilisateur : le diriger pour qu'il
+  exécute lui-même l'opération sensible.
+
 ## Conventions et pièges
 - Alias `@/…` → `src/app/…` (dans `vite.config.ts` **et** `tsconfig.json`, garder les deux synchro).
 - `figma:asset/<hash>.png` → `src/assets/<hash>.png` via un plugin Vite custom (`figmaAssetResolver` dans `vite.config.ts`). Conserver tant que les imports ne sont pas renommés.
