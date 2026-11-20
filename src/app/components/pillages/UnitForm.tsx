@@ -130,7 +130,7 @@ function resolveEquipmentConflicts(
 
   return next;
 }
-import { Plus, Minus, Shield, Sword, Crosshair, Zap, Sparkles, X } from "lucide-react";
+import { Plus, Minus, Shield, Sword, Crosshair, Zap, Sparkles, X, ChevronDown } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useTranslation } from "./TranslationContext";
@@ -173,6 +173,7 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
   const [selectedUnitId, setSelectedUnitId] = React.useState<string>("");
   const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>([]);
   const [quantity, setQuantity] = React.useState(1);
+  const [rosterOpen, setRosterOpen] = React.useState(false);
   const [internalIsOpen, setInternalIsOpen] = React.useState(false);
   // When set, the user has chosen a mercenary from this other faction.
   const [mercFactionId, setMercFactionId] = React.useState<string | null>(null);
@@ -649,10 +650,22 @@ export function UnitForm({ faction, onAddUnit, currentPoints, maxPoints, isOpen:
             {/* Compact roster of units already in the army */}
             {army.length > 0 && (
               <div className="shrink-0 mt-3 px-3 py-2 bg-black/30 border border-white/5 rounded-none">
-                <div className="text-[10px] uppercase tracking-widest text-stone-500 font-bold mb-1.5">
-                  {t('currentRosterLabel')}
-                </div>
-                <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {/* On mobile the roster is collapsible (collapsed by default) so a
+                    long army doesn't push the unit picker off small screens.
+                    From sm and up it is always shown and the toggle is inert. */}
+                <button
+                  type="button"
+                  onClick={() => setRosterOpen((o) => !o)}
+                  aria-expanded={rosterOpen}
+                  className="w-full flex items-center justify-between gap-2 text-[10px] uppercase tracking-widest text-stone-500 font-bold sm:mb-1.5 sm:pointer-events-none sm:cursor-default"
+                >
+                  <span>
+                    {t('currentRosterLabel')}
+                    <span className="sm:hidden text-stone-600 font-mono normal-case ml-1">({army.length})</span>
+                  </span>
+                  <ChevronDown className={`w-4 h-4 sm:hidden transition-transform ${rosterOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <ul className={`${rosterOpen ? 'flex mt-1.5 max-h-32 overflow-y-auto custom-scrollbar' : 'hidden'} sm:flex sm:mt-0 sm:max-h-none sm:overflow-visible flex-wrap gap-x-3 gap-y-1.5`}>
                   {army.map((u) => {
                     const ef = u.sourceFactionId && u.sourceFactionId !== faction.id
                       ? (allFactions.find(f => f.id === u.sourceFactionId) ?? faction)
