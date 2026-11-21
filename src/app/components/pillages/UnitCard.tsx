@@ -18,6 +18,36 @@ import { UnitForm } from "./UnitForm";
 import { getUnitDisplayName, getUnitDisplayIcon, ICON_REGISTRY } from "./unitNaming";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { RotateCw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { Checkbox } from "../ui/checkbox";
+
+// "Don't show again" preference for the remove-unit confirmation, per device.
+const SKIP_REMOVE_CONFIRM_KEY = "pillage_skip_remove_confirm_v1";
+
+function readSkipRemoveConfirm(): boolean {
+  try {
+    return localStorage.getItem(SKIP_REMOVE_CONFIRM_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeSkipRemoveConfirm() {
+  try {
+    localStorage.setItem(SKIP_REMOVE_CONFIRM_KEY, "1");
+  } catch {
+    // localStorage unavailable (private mode): the dialog will just show again.
+  }
+}
 
 interface UnitCardProps {
   unit: ArmyUnit;
@@ -54,6 +84,23 @@ import containerBg from "figma:asset/57207223c848fe507d04a74d9ec51cd6651e3027.pn
 
 export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUnit, onUpdateCustomName, onUpdateCustomIcon, onMoveUp, onMoveDown, canMoveUp = false, canMoveDown = false, dogHandlerActive = false, army, isSelected = false, onToggleSelection, fogEnabled = false, onToggleHidden, onToggleHiddenEquipment }: UnitCardProps) {
   const { t, tData, language } = useTranslation();
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = React.useState(false);
+  const [dontAskAgain, setDontAskAgain] = React.useState(false);
+
+  const requestRemove = () => {
+    if (readSkipRemoveConfirm()) {
+      onRemove(unit.instanceId);
+      return;
+    }
+    setDontAskAgain(false);
+    setConfirmRemoveOpen(true);
+  };
+
+  const confirmRemove = () => {
+    if (dontAskAgain) writeSkipRemoveConfirm();
+    setConfirmRemoveOpen(false);
+    onRemove(unit.instanceId);
+  };
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const [nameDraft, setNameDraft] = React.useState<string>(unit.customName ?? "");
@@ -384,11 +431,43 @@ export function UnitCard({ unit, faction, onRemove, onUpdateQuantity, onUpdateUn
                 variant="ghost"
                 size="icon"
                 className="text-stone-500 hover:text-red-400 hover:bg-red-950/20 transition-colors rounded-none h-9 w-9"
-                onClick={() => onRemove(unit.instanceId)}
+                onClick={requestRemove}
                 aria-label={t('remove')}
                 >
                 <Trash2 className="w-4 h-4" />
                 </Button>
+
+                <AlertDialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+                  <AlertDialogContent className="bg-[#1c1917] border border-white/10 rounded-none text-stone-200 max-w-sm">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="font-serif text-xl text-white">
+                        {t('confirmRemoveTitle')}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="text-stone-400">
+                        {t('confirmRemoveDesc').replace('{name}', unitName)}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <label className="flex items-center gap-2 text-sm text-stone-400 cursor-pointer select-none">
+                      <Checkbox
+                        checked={dontAskAgain}
+                        onCheckedChange={(v) => setDontAskAgain(v === true)}
+                        className="rounded-none border-stone-600 data-[state=checked]:bg-[#cc6512] data-[state=checked]:border-[#cc6512]"
+                      />
+                      {t('dontShowAgain')}
+                    </label>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-none bg-transparent border-white/10 text-stone-300 hover:bg-white/5 hover:text-white">
+                        {t('cancel')}
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={confirmRemove}
+                        className="rounded-none bg-red-800 hover:bg-red-700 text-white"
+                      >
+                        {t('remove')}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
 
                 <Button
                 variant="ghost"
